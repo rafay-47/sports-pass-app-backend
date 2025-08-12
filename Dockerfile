@@ -1,38 +1,30 @@
-FROM php:8.2-apache
+FROM php:8.2-cli
 
-# Install Laravel dependencies & oniguruma for mbstring
+# Install system dependencies & PHP extensions
 RUN apt-get update && apt-get install -y \
-    git unzip libpng-dev libjpeg-dev libfreetype6-dev \
-    libzip-dev zip libonig-dev \
-    && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd zip
-
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+    git unzip curl libpng-dev libjpeg-dev libfreetype6-dev \
+    libzip-dev zip libonig-dev libpq-dev \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql pgsql mbstring exif pcntl bcmath gd zip
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy composer files
+# Copy composer files and install dependencies
 COPY composer.json composer.lock ./
-
-# Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-# Allow composer as root & install dependencies without running artisan scripts
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN composer install --optimize-autoloader --no-dev --no-scripts
 
 # Copy the rest of the application
 COPY . .
 
-# Set permissions
+# Set permissions for Laravel storage and cache
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Point Apache to Laravel's public folder
-RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
+# Expose Laravel default port
+EXPOSE 8000
 
-# Expose port
-EXPOSE 80
-
-# Start Apache
-CMD ["apache2-foreground"]
+# Start the application:
+# 1. Run migrations (force to skip confirmation)
+# 2. Start Laravel server on Render-assigned port
+CMD php artisan migrate --force && php artisan serve --host 0.0.0.0 --port $PORT
