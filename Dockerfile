@@ -27,4 +27,4 @@ EXPOSE 8000
 # Start the application:
 # 1. Run migrations (force to skip confirmation)
 # 2. Start Laravel server on Render-assigned port
-CMD php artisan migrate:fresh --seed && php artisan serve --host 0.0.0.0 --port $PORT
+CMD php artisan migrate --force && php artisan serve --host 0.0.0.0 --port $PORT
