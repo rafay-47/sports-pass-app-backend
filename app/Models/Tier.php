@@ -106,11 +106,12 @@ class Tier extends Model
     public function getDiscountedPriceAttribute()
     {
         if ($this->discount_percentage <= 0) {
-            return $this->price;
+            return number_format($this->price, 2, '.', '');
         }
 
         $discountAmount = ($this->price * $this->discount_percentage) / 100;
-        return round($this->price - $discountAmount, 2);
+        $discountedPrice = $this->price - $discountAmount;
+        return number_format($discountedPrice, 2, '.', '');
     }
 
     /**
