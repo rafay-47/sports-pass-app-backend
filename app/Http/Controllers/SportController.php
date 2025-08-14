@@ -1,0 +1,221 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Sport;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
+
+class SportController extends Controller
+{
+    /**
+     * Display a listing of sports.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $query = Sport::query();
+
+        // Filter by active status
+        if ($request->has('active')) {
+            $query->where('is_active', $request->boolean('active'));
+        }
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ILIKE', "%{$search}%")
+                  ->orWhere('display_name', 'ILIKE', "%{$search}%")
+                  ->orWhere('description', 'ILIKE', "%{$search}%");
+            });
+        }
+
+        // Pagination
+        $perPage = $request->get('per_page', 15);
+        $sports = $query->orderBy('name')->paginate($perPage);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'sports' => $sports->items(),
+                'pagination' => [
+                    'current_page' => $sports->currentPage(),
+                    'last_page' => $sports->lastPage(),
+                    'per_page' => $sports->perPage(),
+                    'total' => $sports->total(),
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Store a newly created sport.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:100|unique:sports,name',
+            'display_name' => 'required|string|max:100',
+            'icon' => 'required|string',
+            'color' => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'description' => 'nullable|string',
+            'is_active' => 'boolean'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $sport = Sport::create($request->only([
+                'name', 'display_name', 'icon', 'color', 'description', 'is_active'
+            ]));
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Sport created successfully',
+                'data' => [
+                    'sport' => $sport
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create sport',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified sport.
+     */
+    public function show(Sport $sport): JsonResponse
+    {
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'sport' => $sport
+            ]
+        ]);
+    }
+
+    /**
+     * Update the specified sport.
+     */
+    public function update(Request $request, Sport $sport): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|string|max:100|unique:sports,name,' . $sport->id,
+            'display_name' => 'sometimes|string|max:100',
+            'icon' => 'sometimes|string',
+            'color' => 'sometimes|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'description' => 'nullable|string',
+            'is_active' => 'boolean'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $sport->update($request->all());
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Sport updated successfully',
+                'data' => [
+                    'sport' => $sport->fresh()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update sport',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified sport.
+     */
+    public function destroy(Sport $sport): JsonResponse
+    {
+        try {
+            $sport->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Sport deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to delete sport',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get only active sports.
+     */
+    public function active(): JsonResponse
+    {
+        try {
+            $sports = Sport::where('is_active', true)->orderBy('name')->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'sports' => $sports
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve active sports',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Toggle sport active status.
+     */
+    public function toggleStatus(Sport $sport): JsonResponse
+    {
+        try {
+            $sport->update(['is_active' => !$sport->is_active]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Sport status updated successfully',
+                'data' => [
+                    'sport' => $sport->fresh()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update sport status',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+}

@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\SportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,6 +26,13 @@ Route::prefix('auth')->middleware(['throttle:10,1'])->group(function () {
     Route::post('resend-verification', [AuthController::class, 'resendVerification'])->name('verification.resend');
 });
 
+// Public sports routes (read-only)
+Route::prefix('sports')->group(function () {
+    Route::get('/', [SportController::class, 'index'])->name('sports.index');
+    Route::get('/active', [SportController::class, 'active'])->name('sports.active');
+    Route::get('/{sport}', [SportController::class, 'show'])->name('sports.show');
+});
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // User authentication routes
@@ -35,6 +43,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('update-profile', [AuthController::class, 'updateProfile'])->name('user.update');
         Route::post('change-password', [AuthController::class, 'changePassword'])->name('password.change');
         Route::post('deactivate-account', [AuthController::class, 'deactivateAccount'])->name('user.deactivate');
+    });
+    
+    // Sports management routes (admin/trainer only)
+    Route::prefix('admin/sports')->group(function () {
+        Route::post('/', [SportController::class, 'store'])->name('admin.sports.store');
+        Route::put('/{sport}', [SportController::class, 'update'])->name('admin.sports.update');
+        Route::delete('/{sport}', [SportController::class, 'destroy'])->name('admin.sports.destroy');
+        Route::post('/{sport}/toggle-status', [SportController::class, 'toggleStatus'])->name('admin.sports.toggle');
     });
     
     // Get authenticated user

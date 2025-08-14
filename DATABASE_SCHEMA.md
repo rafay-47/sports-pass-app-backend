@@ -45,7 +45,23 @@ CREATE TABLE users (\
 );\
 ```\
 \
-
+### 2. Sports Table\
+```sql\
+CREATE TABLE sports (\
+    id VARCHAR(50) PRIMARY KEY,\
+    name VARCHAR(100) NOT NULL,\
+    display_name VARCHAR(100) NOT NULL,\
+    icon VARCHAR(10) NOT NULL,\
+    color VARCHAR(7) NOT NULL, -- Hex color code\
+    description TEXT,\
+    is_active BOOLEAN DEFAULT TRUE,\
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\
+    \
+    -- Indexes\
+    INDEX idx_sports_active (is_active)\
+);\
+```\
 ## Security Considerations\
 \
 1. **Data Encryption**: Encrypt sensitive fields like payment information and personal data\
