@@ -13,17 +13,18 @@ return new class extends Migration
     {
         Schema::create('sports', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('name', 100)->unique();
+            $table->string('name', 100);
             $table->string('display_name', 100);
-            // Using placeholder image URL for icons; need enough length for full URL
             $table->string('icon', 255);
             $table->string('color', 7); // Hex color code
             $table->text('description')->nullable();
+            $table->integer('number_of_services')->default(0); // Count of services available for this sport
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             
             // Indexes
             $table->index('is_active', 'idx_sports_active');
+            $table->index('number_of_services', 'idx_sports_services_count');
         });
     }
 

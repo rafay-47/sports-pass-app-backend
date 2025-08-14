@@ -31,6 +31,7 @@ class UserFactory extends Factory
             'date_of_birth' => fake()->optional()->date('Y-m-d'),
             'gender' => fake()->optional()->randomElement(['male', 'female', 'other']),
             'profile_image_url' => fake()->optional()->imageUrl(500, 500, 'people'),
+            'user_role' => fake()->randomElement(['member', 'owner', 'admin']),
             'is_trainer' => fake()->boolean(20), // 20% chance true
             'is_verified' => fake()->boolean(50),
             'is_active' => true,

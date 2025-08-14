@@ -54,12 +54,21 @@ class SportController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        // Additional authorization check (redundant with middleware, but good practice)
+        if ($request->user()->user_role !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only admins can create sports'
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100|unique:sports,name',
             'display_name' => 'required|string|max:100',
             'icon' => 'required|string',
             'color' => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'description' => 'nullable|string',
+            'number_of_services' => 'integer|min:0',
             'is_active' => 'boolean'
         ]);
 
@@ -73,7 +82,7 @@ class SportController extends Controller
 
         try {
             $sport = Sport::create($request->only([
-                'name', 'display_name', 'icon', 'color', 'description', 'is_active'
+                'name', 'display_name', 'icon', 'color', 'description', 'number_of_services', 'is_active'
             ]));
 
             return response()->json([
@@ -111,12 +120,21 @@ class SportController extends Controller
      */
     public function update(Request $request, Sport $sport): JsonResponse
     {
+        // Additional authorization check
+        if ($request->user()->user_role !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only admins can update sports'
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:100|unique:sports,name,' . $sport->id,
             'display_name' => 'sometimes|string|max:100',
             'icon' => 'sometimes|string',
             'color' => 'sometimes|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'description' => 'nullable|string',
+            'number_of_services' => 'sometimes|integer|min:0',
             'is_active' => 'boolean'
         ]);
 
@@ -151,8 +169,16 @@ class SportController extends Controller
     /**
      * Remove the specified sport.
      */
-    public function destroy(Sport $sport): JsonResponse
+    public function destroy(Request $request, Sport $sport): JsonResponse
     {
+        // Additional authorization check
+        if ($request->user()->user_role !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only admins can delete sports'
+            ], 403);
+        }
+
         try {
             $sport->delete();
 
@@ -197,8 +223,16 @@ class SportController extends Controller
     /**
      * Toggle sport active status.
      */
-    public function toggleStatus(Sport $sport): JsonResponse
+    public function toggleStatus(Request $request, Sport $sport): JsonResponse
     {
+        // Additional authorization check
+        if ($request->user()->user_role !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only admins can toggle sport status'
+            ], 403);
+        }
+
         try {
             $sport->update(['is_active' => !$sport->is_active]);
 

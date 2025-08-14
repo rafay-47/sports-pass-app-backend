@@ -18,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+            'role' => \App\Http\Middleware\CheckUserRole::class,
+            'trainer' => \App\Http\Middleware\CheckTrainerRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

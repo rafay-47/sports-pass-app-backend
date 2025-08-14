@@ -27,6 +27,7 @@ class User extends Authenticatable
         'date_of_birth',
         'gender',
         'profile_image_url',
+        'user_role',
         'is_trainer',
         'is_verified',
         'is_active',

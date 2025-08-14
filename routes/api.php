@@ -45,12 +45,88 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('deactivate-account', [AuthController::class, 'deactivateAccount'])->name('user.deactivate');
     });
     
-    // Sports management routes (admin/trainer only)
-    Route::prefix('admin/sports')->group(function () {
+    // Sports management routes (admin only)
+    Route::prefix('admin/sports')->middleware('role:admin')->group(function () {
         Route::post('/', [SportController::class, 'store'])->name('admin.sports.store');
         Route::put('/{sport}', [SportController::class, 'update'])->name('admin.sports.update');
         Route::delete('/{sport}', [SportController::class, 'destroy'])->name('admin.sports.destroy');
         Route::post('/{sport}/toggle-status', [SportController::class, 'toggleStatus'])->name('admin.sports.toggle');
+    });
+    
+    // Trainer-specific routes (trainers, admins, and owners can access)
+    Route::prefix('trainer')->middleware('trainer')->group(function () {
+        // Add trainer-specific endpoints here
+        Route::get('/dashboard', function (Request $request) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Trainer dashboard access granted',
+                'data' => [
+                    'user' => $request->user()->only(['id', 'name', 'user_role', 'is_trainer'])
+                ]
+            ]);
+        })->name('trainer.dashboard');
+    });
+    
+    // Member-only routes (all authenticated users can access)
+    Route::prefix('member')->group(function () {
+        // Member-specific endpoints
+        Route::get('/dashboard', function (Request $request) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Member dashboard access granted',
+                'data' => [
+                    'user' => $request->user()->only(['id', 'name', 'user_role', 'is_trainer'])
+                ]
+            ]);
+        })->name('member.dashboard');
+    });
+    
+    // Owner-only routes (highest privilege level)
+    Route::prefix('owner')->middleware('role:owner')->group(function () {
+        // User management
+        Route::get('/users', function (Request $request) {
+            $users = \App\Models\User::select(['id', 'name', 'email', 'user_role', 'is_trainer', 'is_active', 'created_at'])
+                ->paginate(15);
+            
+            return response()->json([
+                'status' => 'success',
+                'data' => $users
+            ]);
+        })->name('owner.users.index');
+        
+        Route::put('/users/{user}/role', function (Request $request, \App\Models\User $user) {
+            $request->validate([
+                'user_role' => 'required|in:member,admin,owner',
+                'is_trainer' => 'boolean'
+            ]);
+            
+            $user->update([
+                'user_role' => $request->user_role,
+                'is_trainer' => $request->boolean('is_trainer', false)
+            ]);
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'User role updated successfully',
+                'data' => [
+                    'user' => $user->only(['id', 'name', 'user_role', 'is_trainer'])
+                ]
+            ]);
+        })->name('owner.users.update_role');
+        
+        Route::put('/users/{user}/toggle-status', function (Request $request, \App\Models\User $user) {
+            $user->update([
+                'is_active' => !$user->is_active
+            ]);
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'User status updated successfully',
+                'data' => [
+                    'user' => $user->only(['id', 'name', 'is_active'])
+                ]
+            ]);
+        })->name('owner.users.toggle_status');
     });
     
     // Get authenticated user

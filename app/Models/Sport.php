@@ -11,16 +11,6 @@ class Sport extends Model
     use HasFactory, HasUuids;
 
     /**
-     * The primary key type.
-     */
-    protected $keyType = 'string';
-
-    /**
-     * Indicates if the IDs are auto-incrementing.
-     */
-    public $incrementing = false;
-
-    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -31,6 +21,7 @@ class Sport extends Model
         'icon',
         'color',
         'description',
+        'number_of_services',
         'is_active',
     ];
 
@@ -40,10 +31,9 @@ class Sport extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'number_of_services' => 'integer',
         'is_active' => 'boolean',
     ];
-
-    // ID generation now handled automatically via HasUuids (same approach as User model)
 
     /**
      * Scope a query to only include active sports.

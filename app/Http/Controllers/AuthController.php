@@ -29,6 +29,7 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'date_of_birth' => 'nullable|date|before:today',
             'gender' => 'nullable|in:male,female,other',
+            'user_role' => 'nullable|in:member,owner,admin',
             'is_trainer' => 'boolean'
         ]);
 
@@ -50,6 +51,7 @@ class AuthController extends Controller
                 'password_hash' => Hash::make($request->password),
                 'date_of_birth' => $request->date_of_birth,
                 'gender' => $request->gender,
+                'user_role' => $request->input('user_role', 'member'),
                 'is_trainer' => $request->boolean('is_trainer', false),
                 'is_verified' => false,
                 'is_active' => true,
@@ -188,7 +190,8 @@ class AuthController extends Controller
             'phone' => 'sometimes|string|max:20|unique:users,phone,' . $user->id,
             'date_of_birth' => 'sometimes|nullable|date|before:today',
             'gender' => 'sometimes|nullable|in:male,female,other',
-            'profile_image_url' => 'sometimes|nullable|url|max:500'
+            'profile_image_url' => 'sometimes|nullable|url|max:500',
+            'user_role' => 'sometimes|in:member,owner,admin'
         ]);
 
         if ($validator->fails()) {
@@ -199,10 +202,28 @@ class AuthController extends Controller
             ], 422);
         }
 
+        // Check if user is trying to change their role
+        if ($request->has('user_role') && $request->user_role !== $user->user_role) {
+            // Only owners can change user roles
+            if ($user->user_role !== 'owner') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Only owners can change user roles'
+                ], 403);
+            }
+        }
+
         try {
-            $user->update($request->only([
+            $updateData = $request->only([
                 'name', 'phone', 'date_of_birth', 'gender', 'profile_image_url'
-            ]));
+            ]);
+            
+            // Only allow role change if user is owner
+            if ($request->has('user_role') && $user->user_role === 'owner') {
+                $updateData['user_role'] = $request->user_role;
+            }
+            
+            $user->update($updateData);
 
             return response()->json([
                 'status' => 'success',
@@ -509,6 +530,7 @@ class AuthController extends Controller
             'date_of_birth' => $user->date_of_birth,
             'gender' => $user->gender,
             'profile_image_url' => $user->profile_image_url,
+            'user_role' => $user->user_role,
             'is_trainer' => $user->is_trainer,
             'is_verified' => $user->is_verified,
             'is_active' => $user->is_active,
