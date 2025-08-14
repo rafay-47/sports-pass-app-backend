@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SportController;
+use App\Http\Controllers\SportServiceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +32,15 @@ Route::prefix('sports')->group(function () {
     Route::get('/', [SportController::class, 'index'])->name('sports.index');
     Route::get('/active', [SportController::class, 'active'])->name('sports.active');
     Route::get('/{sport}', [SportController::class, 'show'])->name('sports.show');
+    
+    // Public sport services routes (read-only)
+    Route::get('/{sport}/services', [SportServiceController::class, 'getBySport'])->name('sports.services');
+});
+
+// Public sport services routes (read-only)
+Route::prefix('sport-services')->group(function () {
+    Route::get('/', [SportServiceController::class, 'index'])->name('sport-services.index');
+    Route::get('/{sportService}', [SportServiceController::class, 'show'])->name('sport-services.show');
 });
 
 // Protected routes
@@ -51,6 +61,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{sport}', [SportController::class, 'update'])->name('admin.sports.update');
         Route::delete('/{sport}', [SportController::class, 'destroy'])->name('admin.sports.destroy');
         Route::post('/{sport}/toggle-status', [SportController::class, 'toggleStatus'])->name('admin.sports.toggle');
+    });
+    
+    // Sport Services management routes (admin only)
+    Route::prefix('admin/sport-services')->middleware('role:admin')->group(function () {
+        Route::get('/', [SportServiceController::class, 'index'])->name('admin.sport-services.index');
+        Route::post('/', [SportServiceController::class, 'store'])->name('admin.sport-services.store');
+        Route::get('/{sportService}', [SportServiceController::class, 'show'])->name('admin.sport-services.show');
+        Route::put('/{sportService}', [SportServiceController::class, 'update'])->name('admin.sport-services.update');
+        Route::delete('/{sportService}', [SportServiceController::class, 'destroy'])->name('admin.sport-services.destroy');
+        Route::post('/{sportService}/toggle-status', [SportServiceController::class, 'toggleStatus'])->name('admin.sport-services.toggle');
     });
     
     // Trainer-specific routes (trainers, admins, and owners can access)
