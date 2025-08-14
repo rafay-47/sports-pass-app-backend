@@ -22,6 +22,8 @@ class Tier extends Model
         'tier_name',
         'display_name',
         'description',
+        'icon',
+        'color',
         'price',
         'duration_days',
         'discount_percentage',

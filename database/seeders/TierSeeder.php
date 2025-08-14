@@ -151,11 +151,21 @@ class TierSeeder extends Seeder
                 $this->command->info("Creating tiers for {$sportName}...");
                 
                 foreach ($sportTiers[$sportName] as $tierName => $tierData) {
+                    $iconColors = [
+                        'basic' => ['icon' => 'https://placehold.co/64x64/silver/black/png?text=Basic', 'color' => '#C0C0C0'],
+                        'pro' => ['icon' => 'https://placehold.co/64x64/gold/black/png?text=Pro', 'color' => '#FFD700'],
+                        'elite' => ['icon' => 'https://placehold.co/64x64/purple/white/png?text=Elite', 'color' => '#8B008B'],
+                    ];
+                    
+                    $iconColor = $iconColors[$tierName] ?? ['icon' => 'https://placehold.co/64x64/blue/white/png?text=Tier', 'color' => '#4169E1'];
+                    
                     Tier::create([
                         'sport_id' => $sport->id,
                         'tier_name' => $tierName,
                         'display_name' => $tierData['display_name'],
                         'description' => $tierData['description'],
+                        'icon' => $iconColor['icon'],
+                        'color' => $iconColor['color'],
                         'price' => $tierData['price'],
                         'duration_days' => $tierData['duration_days'],
                         'discount_percentage' => 0.00,
@@ -197,11 +207,21 @@ class TierSeeder extends Seeder
                 ];
 
                 foreach ($defaultTiers as $tierData) {
+                    $iconColors = [
+                        'basic' => ['icon' => 'https://placehold.co/64x64/silver/black/png?text=Basic', 'color' => '#C0C0C0'],
+                        'pro' => ['icon' => 'https://placehold.co/64x64/gold/black/png?text=Pro', 'color' => '#FFD700'],
+                        'elite' => ['icon' => 'https://placehold.co/64x64/purple/white/png?text=Elite', 'color' => '#8B008B'],
+                    ];
+                    
+                    $iconColor = $iconColors[$tierData['tier_name']] ?? ['icon' => 'https://placehold.co/64x64/blue/white/png?text=Tier', 'color' => '#4169E1'];
+                    
                     Tier::create([
                         'sport_id' => $sport->id,
                         'tier_name' => $tierData['tier_name'],
                         'display_name' => $tierData['display_name'],
                         'description' => $tierData['description'],
+                        'icon' => $iconColor['icon'],
+                        'color' => $iconColor['color'],
                         'price' => $tierData['price'],
                         'duration_days' => $tierData['duration_days'],
                         'discount_percentage' => 0.00,

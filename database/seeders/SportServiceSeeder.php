@@ -165,10 +165,34 @@ class SportServiceSeeder extends Seeder
                 $this->command->info("Creating services for {$sportName}...");
                 
                 foreach ($sportServices[$sportName] as $serviceName => $serviceData) {
+                    $serviceIcons = [
+                        'Personal Training' => 'https://placehold.co/64x64/blue/white/png?text=PT',
+                        'Group Training' => 'https://placehold.co/64x64/green/white/png?text=GT',
+                        'Equipment Rental' => 'https://placehold.co/64x64/orange/white/png?text=ER',
+                        'Court Rental' => 'https://placehold.co/64x64/purple/white/png?text=CR',
+                        'Court Booking' => 'https://placehold.co/64x64/purple/white/png?text=CB',
+                        'Private Lessons' => 'https://placehold.co/64x64/red/white/png?text=PL',
+                        'Group Lessons' => 'https://placehold.co/64x64/yellow/white/png?text=GL',
+                        'Swimming Lessons' => 'https://placehold.co/64x64/cyan/white/png?text=SL',
+                        'Aqua Fitness' => 'https://placehold.co/64x64/teal/white/png?text=AF',
+                        'Lane Rental' => 'https://placehold.co/64x64/blue/white/png?text=LR',
+                        'Competitive Training' => 'https://placehold.co/64x64/red/white/png?text=CT',
+                        'Shooting Clinic' => 'https://placehold.co/64x64/orange/white/png?text=SC',
+                        'Team Training' => 'https://placehold.co/64x64/green/white/png?text=TT',
+                        'Field Rental' => 'https://placehold.co/64x64/brown/white/png?text=FR',
+                        'Goalkeeper Training' => 'https://placehold.co/64x64/black/white/png?text=GT',
+                        'Group Classes' => 'https://placehold.co/64x64/pink/white/png?text=GC',
+                        'Sparring Sessions' => 'https://placehold.co/64x64/red/white/png?text=SS',
+                        'Strength Training' => 'https://placehold.co/64x64/gray/white/png?text=ST',
+                    ];
+                    
+                    $icon = $serviceIcons[$serviceName] ?? 'https://placehold.co/64x64/blue/white/png?text=SV';
+                    
                     SportService::create([
                         'sport_id' => $sport->id,
                         'service_name' => $serviceName,
                         'description' => $serviceData['description'],
+                        'icon' => $icon,
                         'base_price' => $serviceData['base_price'],
                         'duration_minutes' => $serviceData['duration_minutes'],
                         'discount_percentage' => $serviceData['discount_percentage'],
@@ -204,10 +228,19 @@ class SportServiceSeeder extends Seeder
                 ];
 
                 foreach ($defaultServices as $serviceData) {
+                    $serviceIcons = [
+                        'Personal Training' => 'https://placehold.co/64x64/blue/white/png?text=PT',
+                        'Group Training' => 'https://placehold.co/64x64/green/white/png?text=GT',
+                        'Equipment Rental' => 'https://placehold.co/64x64/orange/white/png?text=ER',
+                    ];
+                    
+                    $icon = $serviceIcons[$serviceData['service_name']] ?? 'https://placehold.co/64x64/blue/white/png?text=SV';
+                    
                     SportService::create([
                         'sport_id' => $sport->id,
                         'service_name' => $serviceData['service_name'],
                         'description' => $serviceData['description'],
+                        'icon' => $icon,
                         'base_price' => $serviceData['base_price'],
                         'duration_minutes' => $serviceData['duration_minutes'],
                         'discount_percentage' => $serviceData['discount_percentage'],

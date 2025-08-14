@@ -49,6 +49,7 @@ class SportService extends Model
         'sport_id',
         'service_name',
         'description',
+        'icon',
         'base_price',
         'duration_minutes',
         'discount_percentage',
