@@ -1,52 +1,226 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sports Club Backend API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A comprehensive Laravel-based REST API for managing sports clubs, memberships, and services.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 🏆 Sports Management
+- **Sports CRUD**: Complete management of sports categories
+- **Dynamic Sports**: Support for any type of sport
+- **Status Management**: Enable/disable sports dynamically
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 🎯 Services System
+- **Sport Services**: Multiple services per sport (training, equipment rental, etc.)
+- **Pricing Management**: Base prices with discount support
+- **Duration Tracking**: Service duration in minutes
+- **Automatic Counting**: Auto-update service counts per sport
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 🎪 Tier System
+- **Membership Tiers**: Basic, Pro, Elite, and custom tiers
+- **Time-based Availability**: Start and end dates for promotional offers
+- **Feature Lists**: JSON-based feature management
+- **Smart Pricing**: Automatic discount calculations
+- **Flexible Duration**: Customizable membership periods
 
-## Learning Laravel
+### 👥 User Management
+- **Role-based Access**: Member, Admin, Owner roles
+- **Trainer Support**: Special trainer role and permissions
+- **Account Management**: Profile updates, password changes
+- **Email Verification**: Secure account activation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 🔐 Authentication & Security
+- **Sanctum Authentication**: Token-based API security
+- **Rate Limiting**: Protection against abuse
+- **Role Middleware**: Endpoint-level access control
+- **Password Reset**: Secure password recovery
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Quick Start
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Prerequisites
+- PHP 8.1+
+- PostgreSQL 13+
+- Composer
+- Laravel 11.x
 
-## Laravel Sponsors
+### Installation
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/rafay-47/sports-pass-app-backend.git
+   cd sports-club-backend
+   ```
 
-### Premium Partners
+2. **Install dependencies**
+   ```bash
+   composer install
+   ```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+3. **Environment setup**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+4. **Database configuration**
+   Update your `.env` file with PostgreSQL credentials:
+   ```env
+   DB_CONNECTION=pgsql
+   DB_HOST=127.0.0.1
+   DB_PORT=5432
+   DB_DATABASE=sports_club
+   DB_USERNAME=your_username
+   DB_PASSWORD=your_password
+   ```
+
+5. **Run migrations and seeders**
+   ```bash
+   php artisan migrate
+   php artisan db:seed --class=UserSeeder
+   php artisan db:seed --class=SportSeeder
+   php artisan db:seed --class=SportServiceSeeder
+   php artisan db:seed --class=TierSeeder
+   ```
+
+6. **Start the development server**
+   ```bash
+   php artisan serve
+   ```
+
+The API will be available at `http://localhost:8000/api`
+
+## API Documentation
+
+### Core Endpoints
+
+#### Sports
+```
+GET    /api/sports              # List all sports (with tiers & services)
+GET    /api/sports/active       # List active sports only
+GET    /api/sports/{id}         # Get specific sport with tiers & services
+POST   /api/admin/sports        # Create sport (admin only)
+PUT    /api/admin/sports/{id}   # Update sport (admin only)
+DELETE /api/admin/sports/{id}   # Delete sport (admin only)
+```
+
+#### Sport Services
+```
+GET    /api/sport-services           # List all services
+GET    /api/sports/{id}/services     # Get services for specific sport
+POST   /api/admin/sport-services     # Create service (admin only)
+PUT    /api/admin/sport-services/{id} # Update service (admin only)
+DELETE /api/admin/sport-services/{id} # Delete service (admin only)
+```
+
+#### Tiers
+```
+GET    /api/tiers                        # List all tiers
+GET    /api/sports/{id}/tiers            # Get tiers for specific sport
+GET    /api/sports/{id}/tiers/available  # Get available tiers only
+POST   /api/admin/tiers                  # Create tier (admin only)
+PUT    /api/admin/tiers/{id}             # Update tier (admin only)
+DELETE /api/admin/tiers/{id}             # Delete tier (admin only)
+```
+
+#### Authentication
+```
+POST   /api/auth/register        # User registration
+POST   /api/auth/login           # User login
+POST   /api/auth/logout          # User logout
+GET    /api/auth/me              # Get current user
+PUT    /api/auth/update-profile  # Update profile
+POST   /api/auth/change-password # Change password
+```
+
+### Sample Response: Sport with Tiers & Services
+
+```json
+{
+  "status": "success",
+  "data": {
+    "sport": {
+      "id": "uuid",
+      "name": "Basketball",
+      "display_name": "Basketball",
+      "description": "Professional basketball training and facilities",
+      "number_of_services": 4,
+      "active_services_count": 4,
+      "active_tiers_count": 3,
+      "is_active": true,
+      "available_tiers": [
+        {
+          "id": "uuid",
+          "tier_name": "basic",
+          "display_name": "Basketball Basic",
+          "price": "45.00",
+          "discounted_price": "45.00",
+          "duration_days": 30,
+          "features": ["Court access", "Group training"],
+          "is_available": true
+        }
+      ],
+      "active_services": [
+        {
+          "id": "uuid",
+          "service_name": "Personal Training",
+          "base_price": "50.00",
+          "duration_minutes": 60
+        }
+      ]
+    }
+  }
+}
+```
+
+## Database Schema
+
+### Key Tables
+- **sports**: Main sports categories
+- **sport_services**: Services offered for each sport
+- **tiers**: Membership tiers for each sport
+- **users**: User accounts with role-based permissions
+
+### Features
+- **UUID Primary Keys**: For better security and scalability
+- **JSON Fields**: For flexible feature lists in tiers
+- **Automatic Triggers**: Database-level count updates
+- **Comprehensive Indexing**: Optimized for performance
+
+## Development Tools
+
+### Artisan Commands
+```bash
+# Sync service counts
+php artisan sports:sync-service-counts
+
+# Seed sample data
+php artisan db:seed --class=SportSeeder
+php artisan db:seed --class=SportServiceSeeder
+php artisan db:seed --class=TierSeeder
+```
+
+### Testing
+```bash
+php artisan test
+```
+
+## Documentation Files
+- `AUTH_APIs.md` - Authentication endpoints
+- `SPORTS_APIs.md` - Sports management endpoints
+- `SPORT_SERVICES_API.md` - Sport services endpoints
+- `TIERS_API.md` - Tier management endpoints
+- `ROLE_BASED_ACCESS.md` - Permission system documentation
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
+
+## License
+
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 
 ## Code of Conduct
 

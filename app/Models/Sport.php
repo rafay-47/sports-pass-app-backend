@@ -41,7 +41,7 @@ class Sport extends Model
      *
      * @var array
      */
-    protected $appends = ['active_services_count'];
+    protected $appends = [];
 
     /**
      * Get the services for the sport.
@@ -57,6 +57,50 @@ class Sport extends Model
     public function activeServices(): HasMany
     {
         return $this->hasMany(SportService::class)->where('is_active', true);
+    }
+
+    /**
+     * Get the tiers for the sport.
+     */
+    public function tiers(): HasMany
+    {
+        return $this->hasMany(Tier::class);
+    }
+
+    /**
+     * Get the active tiers for the sport.
+     */
+    public function activeTiers(): HasMany
+    {
+        return $this->hasMany(Tier::class)->where('is_active', true);
+    }
+
+    /**
+     * Get the available tiers for the sport (active and within date range).
+     * Note: This uses Carbon::now() so it's not efficient for eager loading.
+     * Use availableOnDate() for better performance with specific dates.
+     */
+    public function availableTiers(): HasMany
+    {
+        return $this->activeTiers()->available();
+    }
+
+    /**
+     * Get tiers available on a specific date (more efficient for eager loading).
+     */
+    public function availableOnDate($date = null): HasMany
+    {
+        $date = $date ?: now()->toDateString();
+        return $this->activeTiers()
+            ->where(function ($query) use ($date) {
+                $query->where(function ($q) use ($date) {
+                    $q->whereNull('start_date')
+                      ->orWhere('start_date', '<=', $date);
+                })->where(function ($q) use ($date) {
+                    $q->whereNull('end_date')
+                      ->orWhere('end_date', '>=', $date);
+                });
+            });
     }
 
     /**
@@ -91,5 +135,13 @@ class Sport extends Model
     public function getActiveServicesCountAttribute(): int
     {
         return $this->activeServices()->count();
+    }
+
+    /**
+     * Get the count of active tiers for this sport.
+     */
+    public function getActiveTiersCountAttribute(): int
+    {
+        return $this->activeTiers()->count();
     }
 }

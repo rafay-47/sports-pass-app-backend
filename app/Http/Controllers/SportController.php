@@ -16,6 +16,16 @@ class SportController extends Controller
     {
         $query = Sport::query();
 
+        // Always include tiers by default for better user experience
+        $withRelations = ['activeTiers'];
+        
+        // Only include services if explicitly requested (to avoid performance issues)
+        if ($request->boolean('include_services', false)) {
+            $withRelations[] = 'activeServices';
+        }
+        
+        $query->with($withRelations);
+
         // Filter by active status
         if ($request->has('active')) {
             $query->where('is_active', $request->boolean('active'));
@@ -107,6 +117,9 @@ class SportController extends Controller
      */
     public function show(Sport $sport): JsonResponse
     {
+        // Always load tiers, only load services if explicitly needed
+        $sport->load(['activeTiers']);
+        
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -199,10 +212,22 @@ class SportController extends Controller
     /**
      * Get only active sports.
      */
-    public function active(): JsonResponse
+    public function active(Request $request): JsonResponse
     {
         try {
-            $sports = Sport::where('is_active', true)->orderBy('name')->get();
+            $query = Sport::where('is_active', true);
+            
+            // Always include tiers by default
+            $withRelations = ['activeTiers'];
+            
+            // Only include services if explicitly requested
+            if ($request->boolean('include_services', false)) {
+                $withRelations[] = 'activeServices';
+            }
+            
+            $query->with($withRelations);
+            
+            $sports = $query->orderBy('name')->get();
 
             return response()->json([
                 'status' => 'success',
@@ -215,6 +240,62 @@ class SportController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve active sports',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get sports with their available tiers (filtered by current date).
+     */
+    public function withAvailableTiers(Request $request): JsonResponse
+    {
+        try {
+            $currentDate = now()->toDateString();
+            
+            $query = Sport::with(['activeTiers' => function ($query) use ($currentDate) {
+                $query->where(function ($q) use ($currentDate) {
+                    $q->where(function ($subQ) use ($currentDate) {
+                        $subQ->whereNull('start_date')
+                             ->orWhere('start_date', '<=', $currentDate);
+                    })->where(function ($subQ) use ($currentDate) {
+                        $subQ->whereNull('end_date')
+                             ->orWhere('end_date', '>=', $currentDate);
+                    });
+                });
+            }]);
+
+            // Filter by active status
+            if ($request->has('active')) {
+                $query->where('is_active', $request->boolean('active'));
+            } else {
+                $query->where('is_active', true); // Default to active sports
+            }
+
+            // Search functionality
+            if ($request->filled('search')) {
+                $search = $request->get('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'ILIKE', "%{$search}%")
+                      ->orWhere('display_name', 'ILIKE', "%{$search}%")
+                      ->orWhere('description', 'ILIKE', "%{$search}%");
+                });
+            }
+
+            $sports = $query->orderBy('name')->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'sports' => $sports,
+                    'filtered_date' => $currentDate
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve sports with available tiers',
                 'error' => $e->getMessage()
             ], 500);
         }

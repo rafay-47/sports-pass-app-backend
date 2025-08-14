@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SportController;
 use App\Http\Controllers\SportServiceController;
+use App\Http\Controllers\TierController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,16 +32,27 @@ Route::prefix('auth')->middleware(['throttle:10,1'])->group(function () {
 Route::prefix('sports')->group(function () {
     Route::get('/', [SportController::class, 'index'])->name('sports.index');
     Route::get('/active', [SportController::class, 'active'])->name('sports.active');
+    Route::get('/with-available-tiers', [SportController::class, 'withAvailableTiers'])->name('sports.with-available-tiers');
     Route::get('/{sport}', [SportController::class, 'show'])->name('sports.show');
     
     // Public sport services routes (read-only)
     Route::get('/{sport}/services', [SportServiceController::class, 'getBySport'])->name('sports.services');
+    
+    // Public tier routes (read-only)
+    Route::get('/{sport}/tiers', [TierController::class, 'getBySport'])->name('sports.tiers');
+    Route::get('/{sport}/tiers/available', [TierController::class, 'getAvailableBySport'])->name('sports.tiers.available');
 });
 
 // Public sport services routes (read-only)
 Route::prefix('sport-services')->group(function () {
     Route::get('/', [SportServiceController::class, 'index'])->name('sport-services.index');
     Route::get('/{sportService}', [SportServiceController::class, 'show'])->name('sport-services.show');
+});
+
+// Public tier routes (read-only)
+Route::prefix('tiers')->group(function () {
+    Route::get('/', [TierController::class, 'index'])->name('tiers.index');
+    Route::get('/{tier}', [TierController::class, 'show'])->name('tiers.show');
 });
 
 // Protected routes
@@ -71,6 +83,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{sportService}', [SportServiceController::class, 'update'])->name('admin.sport-services.update');
         Route::delete('/{sportService}', [SportServiceController::class, 'destroy'])->name('admin.sport-services.destroy');
         Route::post('/{sportService}/toggle-status', [SportServiceController::class, 'toggleStatus'])->name('admin.sport-services.toggle');
+    });
+    
+    // Tier management routes (admin only)
+    Route::prefix('admin/tiers')->middleware('role:admin')->group(function () {
+        Route::get('/', [TierController::class, 'index'])->name('admin.tiers.index');
+        Route::post('/', [TierController::class, 'store'])->name('admin.tiers.store');
+        Route::get('/{tier}', [TierController::class, 'show'])->name('admin.tiers.show');
+        Route::put('/{tier}', [TierController::class, 'update'])->name('admin.tiers.update');
+        Route::delete('/{tier}', [TierController::class, 'destroy'])->name('admin.tiers.destroy');
+        Route::post('/{tier}/toggle-status', [TierController::class, 'toggleStatus'])->name('admin.tiers.toggle');
     });
     
     // Trainer-specific routes (trainers, admins, and owners can access)
