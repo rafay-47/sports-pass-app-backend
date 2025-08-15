@@ -144,4 +144,38 @@ class Sport extends Model
     {
         return $this->activeTiers()->count();
     }
+
+    /**
+     * Calculate pricing information for active services.
+     * This method should be used when services are already loaded to avoid N+1 queries.
+     */
+    public function getServicesPricingInfo(): array
+    {
+        // Use loaded services if available, otherwise query
+        $services = $this->relationLoaded('activeServices') 
+            ? $this->activeServices 
+            : $this->activeServices()->get();
+
+        $totalBasePrice = 0;
+        $totalDiscountedPrice = 0;
+
+        foreach ($services as $service) {
+            $totalBasePrice += $service->base_price;
+            $discountedPrice = $service->base_price;
+            
+            if ($service->discount_percentage > 0) {
+                $discountAmount = ($service->base_price * $service->discount_percentage) / 100;
+                $discountedPrice = $service->base_price - $discountAmount;
+            }
+            
+            $totalDiscountedPrice += $discountedPrice;
+        }
+
+        return [
+            'total_services_base_price' => round($totalBasePrice, 2),
+            'total_services_discounted_price' => round($totalDiscountedPrice, 2),
+            'total_services_savings' => round($totalBasePrice - $totalDiscountedPrice, 2),
+            'services_count' => $services->count()
+        ];
+    }
 }

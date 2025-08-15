@@ -217,4 +217,53 @@ class SportServiceController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Get service prices for a specific sport.
+     */
+    public function getServicePricesBySport(Request $request, Sport $sport): JsonResponse
+    {
+        $query = $sport->services();
+
+        // Filter by active status (default to active only)
+        $query->where('is_active', $request->boolean('include_inactive', false) ? null : true);
+
+        // Get only necessary fields for pricing
+        $services = $query->select([
+            'id',
+            'service_name',
+            'base_price',
+            'discount_percentage',
+            'duration_minutes',
+            'is_active'
+        ])->get();
+
+        // Transform the data to include calculated discounted price
+        $servicesPrices = $services->map(function ($service) {
+            return [
+                'id' => $service->id,
+                'service_name' => $service->service_name,
+                'base_price' => $service->base_price,
+                'discounted_price' => $service->discounted_price,
+                'discount_percentage' => $service->discount_percentage,
+                'duration_minutes' => $service->duration_minutes,
+                'savings' => $service->discount_percentage > 0 
+                    ? round($service->base_price - $service->discounted_price, 2) 
+                    : 0,
+                'is_active' => $service->is_active
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'sport' => $sport->only(['id', 'name', 'display_name']),
+                'services_count' => $servicesPrices->count(),
+                'total_base_price' => $servicesPrices->sum('base_price'),
+                'total_discounted_price' => $servicesPrices->sum('discounted_price'),
+                'total_savings' => $servicesPrices->sum('savings'),
+                'services' => $servicesPrices
+            ]
+        ]);
+    }
 }

@@ -93,6 +93,7 @@ class TierFactory extends Factory
             'end_date' => $endDate,
             'features' => $tierData['features'],
             'is_active' => $this->faker->boolean(90), // 90% chance of being active
+            'is_popular' => $this->faker->boolean(20) // 20% chance of being popular
         ];
     }
 

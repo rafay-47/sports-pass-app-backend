@@ -33,7 +33,8 @@ class UpdateTierRequest extends FormRequest
             'end_date' => 'nullable|date|after:start_date',
             'features' => 'nullable|array',
             'features.*' => 'string',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'is_popular' => 'boolean'
         ];
     }
 

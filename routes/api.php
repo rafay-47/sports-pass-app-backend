@@ -37,6 +37,7 @@ Route::prefix('sports')->group(function () {
     
     // Public sport services routes (read-only)
     Route::get('/{sport}/services', [SportServiceController::class, 'getBySport'])->name('sports.services');
+    Route::get('/{sport}/services/prices', [SportServiceController::class, 'getServicePricesBySport'])->name('sports.services.prices');
     
     // Public tier routes (read-only)
     Route::get('/{sport}/tiers', [TierController::class, 'getBySport'])->name('sports.tiers');

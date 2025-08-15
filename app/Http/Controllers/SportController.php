@@ -16,13 +16,8 @@ class SportController extends Controller
     {
         $query = Sport::query();
 
-        // Always include tiers by default for better user experience
-        $withRelations = ['activeTiers'];
-        
-        // Only include services if explicitly requested (to avoid performance issues)
-        if ($request->boolean('include_services', false)) {
-            $withRelations[] = 'activeServices';
-        }
+        // Always include tiers and services for pricing calculations
+        $withRelations = ['activeTiers', 'activeServices'];
         
         $query->with($withRelations);
 
@@ -45,10 +40,17 @@ class SportController extends Controller
         $perPage = $request->get('per_page', 15);
         $sports = $query->orderBy('name')->paginate($perPage);
 
+        // Add pricing information to each sport
+        $sportsWithPricing = $sports->getCollection()->map(function ($sport) {
+            $sportArray = $sport->toArray();
+            $sportArray['pricing'] = $sport->getServicesPricingInfo();
+            return $sportArray;
+        });
+
         return response()->json([
             'status' => 'success',
             'data' => [
-                'sports' => $sports->items(),
+                'sports' => $sportsWithPricing,
                 'pagination' => [
                     'current_page' => $sports->currentPage(),
                     'last_page' => $sports->lastPage(),
@@ -217,22 +219,24 @@ class SportController extends Controller
         try {
             $query = Sport::where('is_active', true);
             
-            // Always include tiers by default
-            $withRelations = ['activeTiers'];
-            
-            // Only include services if explicitly requested
-            if ($request->boolean('include_services', false)) {
-                $withRelations[] = 'activeServices';
-            }
+            // Always include tiers and services for pricing calculations
+            $withRelations = ['activeTiers', 'activeServices'];
             
             $query->with($withRelations);
             
             $sports = $query->orderBy('name')->get();
 
+            // Add pricing information to each sport
+            $sportsWithPricing = $sports->map(function ($sport) {
+                $sportArray = $sport->toArray();
+                $sportArray['pricing'] = $sport->getServicesPricingInfo();
+                return $sportArray;
+            });
+
             return response()->json([
                 'status' => 'success',
                 'data' => [
-                    'sports' => $sports
+                    'sports' => $sportsWithPricing
                 ]
             ]);
 
@@ -253,17 +257,20 @@ class SportController extends Controller
         try {
             $currentDate = now()->toDateString();
             
-            $query = Sport::with(['activeTiers' => function ($query) use ($currentDate) {
-                $query->where(function ($q) use ($currentDate) {
-                    $q->where(function ($subQ) use ($currentDate) {
-                        $subQ->whereNull('start_date')
-                             ->orWhere('start_date', '<=', $currentDate);
-                    })->where(function ($subQ) use ($currentDate) {
-                        $subQ->whereNull('end_date')
-                             ->orWhere('end_date', '>=', $currentDate);
+            $query = Sport::with([
+                'activeTiers' => function ($query) use ($currentDate) {
+                    $query->where(function ($q) use ($currentDate) {
+                        $q->where(function ($subQ) use ($currentDate) {
+                            $subQ->whereNull('start_date')
+                                 ->orWhere('start_date', '<=', $currentDate);
+                        })->where(function ($subQ) use ($currentDate) {
+                            $subQ->whereNull('end_date')
+                                 ->orWhere('end_date', '>=', $currentDate);
+                        });
                     });
-                });
-            }]);
+                },
+                'activeServices' // Include services for pricing calculations
+            ]);
 
             // Filter by active status
             if ($request->has('active')) {
@@ -284,10 +291,17 @@ class SportController extends Controller
 
             $sports = $query->orderBy('name')->get();
 
+            // Add pricing information to each sport
+            $sportsWithPricing = $sports->map(function ($sport) {
+                $sportArray = $sport->toArray();
+                $sportArray['pricing'] = $sport->getServicesPricingInfo();
+                return $sportArray;
+            });
+
             return response()->json([
                 'status' => 'success',
                 'data' => [
-                    'sports' => $sports,
+                    'sports' => $sportsWithPricing,
                     'filtered_date' => $currentDate
                 ]
             ]);

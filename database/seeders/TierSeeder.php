@@ -159,6 +159,9 @@ class TierSeeder extends Seeder
                     
                     $iconColor = $iconColors[$tierName] ?? ['icon' => 'https://placehold.co/64x64/blue/white/png?text=Tier', 'color' => '#4169E1'];
                     
+                    // Make the "pro" tier popular for each sport
+                    $isPopular = ($tierName === 'pro');
+                    
                     Tier::create([
                         'sport_id' => $sport->id,
                         'tier_name' => $tierName,
@@ -173,6 +176,7 @@ class TierSeeder extends Seeder
                         'end_date' => null,
                         'features' => $tierData['features'],
                         'is_active' => true,
+                        'is_popular' => $isPopular,
                     ]);
                 }
             } else {
@@ -215,6 +219,9 @@ class TierSeeder extends Seeder
                     
                     $iconColor = $iconColors[$tierData['tier_name']] ?? ['icon' => 'https://placehold.co/64x64/blue/white/png?text=Tier', 'color' => '#4169E1'];
                     
+                    // Make the "pro" tier popular for each sport
+                    $isPopular = ($tierData['tier_name'] === 'pro');
+                    
                     Tier::create([
                         'sport_id' => $sport->id,
                         'tier_name' => $tierData['tier_name'],
@@ -229,6 +236,7 @@ class TierSeeder extends Seeder
                         'end_date' => null,
                         'features' => $tierData['features'],
                         'is_active' => true,
+                        'is_popular' => $isPopular,
                     ]);
                 }
             }
@@ -250,6 +258,7 @@ class TierSeeder extends Seeder
                 'end_date' => Carbon::now()->addDays(60),
                 'features' => ['Court access', 'Group training', 'Summer camp', 'Equipment rental'],
                 'is_active' => true,
+                'is_popular' => false,
             ],
             [
                 'sport_id' => $sports->where('name', 'Tennis')->first()?->id ?? $sports->first()->id,
@@ -263,6 +272,7 @@ class TierSeeder extends Seeder
                 'end_date' => null,
                 'features' => ['Weekend court access', 'Saturday coaching', 'Equipment included'],
                 'is_active' => true,
+                'is_popular' => false,
             ]
         ];
 

@@ -31,6 +31,7 @@ class Tier extends Model
         'end_date',
         'features',
         'is_active',
+        'is_popular',
     ];
 
     /**
@@ -46,6 +47,7 @@ class Tier extends Model
         'end_date' => 'date',
         'features' => 'array',
         'is_active' => 'boolean',
+        'is_popular' => 'boolean',
     ];
 
     /**
@@ -69,6 +71,14 @@ class Tier extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope a query to only include popular tiers.
+     */
+    public function scopePopular($query)
+    {
+        return $query->where('is_popular', true);
     }
 
     /**
