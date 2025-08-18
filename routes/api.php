@@ -7,6 +7,7 @@ use App\Http\Controllers\SportController;
 use App\Http\Controllers\SportServiceController;
 use App\Http\Controllers\TierController;
 use App\Http\Controllers\MembershipController;
+use App\Http\Controllers\TrainerProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -55,6 +56,13 @@ Route::prefix('sport-services')->group(function () {
 Route::prefix('tiers')->group(function () {
     Route::get('/', [TierController::class, 'index'])->name('tiers.index');
     Route::get('/{tier}', [TierController::class, 'show'])->name('tiers.show');
+});
+
+// Public trainer profile routes (read-only)
+Route::prefix('trainers')->group(function () {
+    Route::get('/', [TrainerProfileController::class, 'index'])->name('trainers.index');
+    Route::get('/{trainerProfile}', [TrainerProfileController::class, 'show'])->name('trainers.show');
+    Route::get('/sport/{sport}', [TrainerProfileController::class, 'getBySport'])->name('trainers.by-sport');
 });
 
 // Protected routes
@@ -109,6 +117,26 @@ Route::middleware('auth:sanctum')->group(function () {
                 ]
             ]);
         })->name('trainer.dashboard');
+        
+        // Trainer's own profile
+        Route::get('/profile', [TrainerProfileController::class, 'myProfile'])->name('trainer.profile');
+        Route::put('/profile/toggle-availability', [TrainerProfileController::class, 'toggleAvailability'])->name('trainer.toggle-availability');
+    });
+    
+    // Trainer Profile management routes
+    Route::prefix('trainer-profiles')->group(function () {
+        Route::get('/', [TrainerProfileController::class, 'index'])->name('trainer-profiles.index');
+        Route::post('/', [TrainerProfileController::class, 'store'])->name('trainer-profiles.store');
+        Route::get('/statistics', [TrainerProfileController::class, 'statistics'])->name('trainer-profiles.statistics');
+        Route::get('/{trainerProfile}', [TrainerProfileController::class, 'show'])->name('trainer-profiles.show');
+        Route::put('/{trainerProfile}', [TrainerProfileController::class, 'update'])->name('trainer-profiles.update');
+        Route::delete('/{trainerProfile}', [TrainerProfileController::class, 'destroy'])->name('trainer-profiles.destroy');
+        
+        // Trainer profile actions
+        Route::post('/{trainerProfile}/verify', [TrainerProfileController::class, 'verify'])->name('trainer-profiles.verify');
+        Route::post('/{trainerProfile}/unverify', [TrainerProfileController::class, 'unverify'])->name('trainer-profiles.unverify');
+        Route::post('/{trainerProfile}/toggle-availability', [TrainerProfileController::class, 'toggleAvailability'])->name('trainer-profiles.toggle-availability');
+        Route::post('/{trainerProfile}/update-statistics', [TrainerProfileController::class, 'updateStatistics'])->name('trainer-profiles.update-statistics');
     });
     
     // Member-only routes (all authenticated users can access)
