@@ -27,9 +27,8 @@ class TrainerProfileController extends Controller
         ]);
 
         // Role-based filtering
-        $user = $request->user();
-        if (!$user || !in_array($user->user_role, ['admin', 'owner'])) {
-            // Unauthenticated users and regular users can only see verified and available trainers
+        if (!in_array($request->user()->user_role, ['admin', 'owner'])) {
+            // Regular users can only see verified and available trainers
             $query->verified()->available();
         }
 
@@ -188,17 +187,18 @@ class TrainerProfileController extends Controller
             'user:id,name,email,phone,gender,profile_image_url,join_date',
             'sport:id,name,display_name,icon,color',
             'tier:id,tier_name,display_name,price,features',
-            'specialties',
-            'certifications' => function ($query) {
-                $query->where('is_verified', true);
-            },
-            'locations'
+            // TODO: Add these when models are created
+            // 'specialties',
+            // 'certifications' => function ($query) {
+            //     $query->where('is_verified', true);
+            // },
+            // 'locations'
         ]);
 
-        // Load availability if requested
-        if ($request->boolean('include_availability')) {
-            $trainerProfile->load('availability');
-        }
+        // TODO: Load availability when model is created
+        // if ($request->boolean('include_availability')) {
+        //     $trainerProfile->load('availability');
+        // }
 
         return response()->json([
             'status' => 'success',
@@ -244,8 +244,7 @@ class TrainerProfileController extends Controller
     public function destroy(Request $request, TrainerProfile $trainerProfile): JsonResponse
     {
         // Only admins and owners can delete trainer profiles
-        $user = $request->user();
-        if (!$user || !in_array($user->user_role, ['admin', 'owner'])) {
+        if (!in_array($request->user()->user_role, ['admin', 'owner'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized to delete trainer profiles'
@@ -275,8 +274,7 @@ class TrainerProfileController extends Controller
     public function verify(Request $request, TrainerProfile $trainerProfile): JsonResponse
     {
         // Only admins and owners can verify trainers
-        $user = $request->user();
-        if (!$user || !in_array($user->user_role, ['admin', 'owner'])) {
+        if (!in_array($request->user()->user_role, ['admin', 'owner'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized to verify trainer profiles'
@@ -300,8 +298,7 @@ class TrainerProfileController extends Controller
     public function unverify(Request $request, TrainerProfile $trainerProfile): JsonResponse
     {
         // Only admins and owners can unverify trainers
-        $user = $request->user();
-        if (!$user || !in_array($user->user_role, ['admin', 'owner'])) {
+        if (!in_array($request->user()->user_role, ['admin', 'owner'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized to unverify trainer profiles'
@@ -325,9 +322,8 @@ class TrainerProfileController extends Controller
     public function toggleAvailability(Request $request, TrainerProfile $trainerProfile): JsonResponse
     {
         // Authorization check
-        $user = $request->user();
-        if (!$user || (!in_array($user->user_role, ['admin', 'owner']) && 
-            $trainerProfile->user_id !== $user->id)) {
+        if (!in_array($request->user()->user_role, ['admin', 'owner']) && 
+            $trainerProfile->user_id !== $request->user()->id) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized to change this trainer\'s availability'
@@ -400,8 +396,7 @@ class TrainerProfileController extends Controller
         $query = TrainerProfile::query();
 
         // Role-based filtering
-        $user = $request->user();
-        if (!$user || !in_array($user->user_role, ['admin', 'owner'])) {
+        if (!in_array($request->user()->user_role, ['admin', 'owner'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized to view trainer statistics'
@@ -450,10 +445,11 @@ class TrainerProfileController extends Controller
         $trainerProfile = TrainerProfile::with([
             'sport:id,name,display_name,icon,color',
             'tier:id,tier_name,display_name,price,features',
-            'specialties',
-            'certifications',
-            'locations',
-            'availability'
+            // TODO: Add these when models are created
+            // 'specialties',
+            // 'certifications',
+            // 'locations',
+            // 'availability'
         ])->where('user_id', $request->user()->id)->first();
 
         if (!$trainerProfile) {
@@ -477,9 +473,8 @@ class TrainerProfileController extends Controller
     public function updateStatistics(Request $request, TrainerProfile $trainerProfile): JsonResponse
     {
         // Only admins, owners, or the trainer themselves can update statistics
-        $user = $request->user();
-        if (!$user || (!in_array($user->user_role, ['admin', 'owner']) && 
-            $trainerProfile->user_id !== $user->id)) {
+        if (!in_array($request->user()->user_role, ['admin', 'owner']) && 
+            $trainerProfile->user_id !== $request->user()->id) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized to update trainer statistics'

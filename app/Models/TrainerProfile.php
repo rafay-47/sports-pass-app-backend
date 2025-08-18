@@ -82,43 +82,48 @@ class TrainerProfile extends Model
 
     /**
      * Relationship: TrainerProfile has many certifications.
+     * TODO: Uncomment when TrainerCertification model is created
      */
-    public function certifications(): HasMany
-    {
-        return $this->hasMany(TrainerCertification::class);
-    }
+    // public function certifications(): HasMany
+    // {
+    //     return $this->hasMany(TrainerCertification::class);
+    // }
 
     /**
      * Relationship: TrainerProfile has many specialties.
+     * TODO: Uncomment when TrainerSpecialty model is created
      */
-    public function specialties(): HasMany
-    {
-        return $this->hasMany(TrainerSpecialty::class);
-    }
+    // public function specialties(): HasMany
+    // {
+    //     return $this->hasMany(TrainerSpecialty::class);
+    // }
 
     /**
      * Relationship: TrainerProfile has many availability slots.
+     * TODO: Uncomment when TrainerAvailability model is created
      */
-    public function availability(): HasMany
-    {
-        return $this->hasMany(TrainerAvailability::class);
-    }
+    // public function availability(): HasMany
+    // {
+    //     return $this->hasMany(TrainerAvailability::class);
+    // }
 
     /**
      * Relationship: TrainerProfile has many locations.
+     * TODO: Uncomment when TrainerLocation model is created
      */
-    public function locations(): HasMany
-    {
-        return $this->hasMany(TrainerLocation::class);
-    }
+    // public function locations(): HasMany
+    // {
+    //     return $this->hasMany(TrainerLocation::class);
+    // }
 
     /**
      * Relationship: TrainerProfile has many trainer sessions.
+     * TODO: Uncomment when TrainerSession model is created
      */
-    public function sessions(): HasMany
-    {
-        return $this->hasMany(TrainerSession::class);
-    }
+    // public function sessions(): HasMany
+    // {
+    //     return $this->hasMany(TrainerSession::class);
+    // }
 
     /**
      * Scope: Verified trainers.
@@ -300,20 +305,21 @@ class TrainerProfile extends Model
 
     /**
      * Check if trainer is available on specific day and time.
+     * TODO: Uncomment when TrainerAvailability model is created
      */
-    public function isAvailableAt(int $dayOfWeek, string $time): bool
-    {
-        if (!$this->is_available) {
-            return false;
-        }
+    // public function isAvailableAt(int $dayOfWeek, string $time): bool
+    // {
+    //     if (!$this->is_available) {
+    //         return false;
+    //     }
 
-        return $this->availability()
-            ->where('day_of_week', $dayOfWeek)
-            ->where('start_time', '<=', $time)
-            ->where('end_time', '>=', $time)
-            ->where('is_available', true)
-            ->exists();
-    }
+    //     return $this->availability()
+    //         ->where('day_of_week', $dayOfWeek)
+    //         ->where('start_time', '<=', $time)
+    //         ->where('end_time', '>=', $time)
+    //         ->where('is_available', true)
+    //         ->exists();
+    // }
 
     /**
      * Get the route key name for model binding.
