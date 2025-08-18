@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SportController;
 use App\Http\Controllers\SportServiceController;
 use App\Http\Controllers\TierController;
+use App\Http\Controllers\MembershipController;
 
 /*
 |--------------------------------------------------------------------------
@@ -122,6 +123,25 @@ Route::middleware('auth:sanctum')->group(function () {
                 ]
             ]);
         })->name('member.dashboard');
+        
+        // Member's own memberships
+        Route::get('/memberships', [MembershipController::class, 'myMemberships'])->name('member.memberships');
+    });
+
+    // Membership management routes
+    Route::prefix('memberships')->group(function () {
+        Route::get('/', [MembershipController::class, 'index'])->name('memberships.index');
+        Route::post('/', [MembershipController::class, 'store'])->name('memberships.store');
+        Route::get('/statistics', [MembershipController::class, 'statistics'])->name('memberships.statistics');
+        Route::get('/{membership}', [MembershipController::class, 'show'])->name('memberships.show');
+        Route::put('/{membership}', [MembershipController::class, 'update'])->name('memberships.update');
+        Route::delete('/{membership}', [MembershipController::class, 'destroy'])->name('memberships.destroy');
+        
+        // Membership actions
+        Route::post('/{membership}/renew', [MembershipController::class, 'renew'])->name('memberships.renew');
+        Route::post('/{membership}/pause', [MembershipController::class, 'pause'])->name('memberships.pause');
+        Route::post('/{membership}/resume', [MembershipController::class, 'resume'])->name('memberships.resume');
+        Route::post('/{membership}/cancel', [MembershipController::class, 'cancel'])->name('memberships.cancel');
     });
     
     // Owner-only routes (highest privilege level)
