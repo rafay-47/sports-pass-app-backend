@@ -188,6 +188,11 @@ class SportServiceSeeder extends Seeder
                     
                     $icon = $serviceIcons[$serviceName] ?? 'https://placehold.co/64x64/blue/white/png?text=SV';
                     
+                    // Determine service type and other attributes
+                    $type = $this->getServiceType($serviceName);
+                    $rating = fake()->randomFloat(2, 3.0, 5.0); // Random rating between 3.0 and 5.0
+                    $isPopular = fake()->boolean(30); // 30% chance of being popular
+                    
                     SportService::create([
                         'sport_id' => $sport->id,
                         'service_name' => $serviceName,
@@ -196,6 +201,9 @@ class SportServiceSeeder extends Seeder
                         'base_price' => $serviceData['base_price'],
                         'duration_minutes' => $serviceData['duration_minutes'],
                         'discount_percentage' => $serviceData['discount_percentage'],
+                        'rating' => $rating,
+                        'type' => $type,
+                        'is_popular' => $isPopular,
                         'is_active' => true,
                     ]);
                 }
@@ -236,6 +244,11 @@ class SportServiceSeeder extends Seeder
                     
                     $icon = $serviceIcons[$serviceData['service_name']] ?? 'https://placehold.co/64x64/blue/white/png?text=SV';
                     
+                    // Determine service type and other attributes
+                    $type = $this->getServiceType($serviceData['service_name']);
+                    $rating = fake()->randomFloat(2, 3.0, 5.0); // Random rating between 3.0 and 5.0
+                    $isPopular = fake()->boolean(30); // 30% chance of being popular
+                    
                     SportService::create([
                         'sport_id' => $sport->id,
                         'service_name' => $serviceData['service_name'],
@@ -244,6 +257,9 @@ class SportServiceSeeder extends Seeder
                         'base_price' => $serviceData['base_price'],
                         'duration_minutes' => $serviceData['duration_minutes'],
                         'discount_percentage' => $serviceData['discount_percentage'],
+                        'rating' => $rating,
+                        'type' => $type,
+                        'is_popular' => $isPopular,
                         'is_active' => true,
                     ]);
                 }
@@ -252,5 +268,41 @@ class SportServiceSeeder extends Seeder
 
         $totalServices = SportService::count();
         $this->command->info("Created {$totalServices} sport services successfully!");
+    }
+
+    /**
+     * Determine the service type based on service name.
+     */
+    private function getServiceType(string $serviceName): string
+    {
+        $trainerServices = [
+            'Personal Training', 'Private Lessons', 'Swimming Lessons', 
+            'Goalkeeper Training', 'Competitive Training'
+        ];
+        
+        $classServices = [
+            'Group Training', 'Group Lessons', 'Group Classes', 'Team Training',
+            'Aqua Fitness', 'Shooting Clinic', 'Sparring Sessions'
+        ];
+        
+        $facilityServices = [
+            'Court Rental', 'Court Booking', 'Field Rental', 'Lane Rental'
+        ];
+        
+        $equipmentServices = [
+            'Equipment Rental'
+        ];
+        
+        if (in_array($serviceName, $trainerServices)) {
+            return 'trainer';
+        } elseif (in_array($serviceName, $classServices)) {
+            return 'class';
+        } elseif (in_array($serviceName, $facilityServices)) {
+            return 'facility';
+        } elseif (in_array($serviceName, $equipmentServices)) {
+            return 'equipment';
+        } else {
+            return 'other';
+        }
     }
 }

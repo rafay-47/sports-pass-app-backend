@@ -8,6 +8,11 @@ use App\Http\Controllers\SportServiceController;
 use App\Http\Controllers\TierController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\TrainerProfileController;
+use App\Http\Controllers\TrainerCertificationController;
+use App\Http\Controllers\TrainerSpecialtyController;
+use App\Http\Controllers\TrainerAvailabilityController;
+use App\Http\Controllers\TrainerLocationController;
+use App\Http\Controllers\TrainerSessionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -137,6 +142,85 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{trainerProfile}/unverify', [TrainerProfileController::class, 'unverify'])->name('trainer-profiles.unverify');
         Route::post('/{trainerProfile}/toggle-availability', [TrainerProfileController::class, 'toggleAvailability'])->name('trainer-profiles.toggle-availability');
         Route::post('/{trainerProfile}/update-statistics', [TrainerProfileController::class, 'updateStatistics'])->name('trainer-profiles.update-statistics');
+    });
+
+    // Trainer Certification management routes
+    Route::prefix('trainer-certifications')->group(function () {
+        Route::get('/', [TrainerCertificationController::class, 'index'])->name('trainer-certifications.index');
+        Route::post('/', [TrainerCertificationController::class, 'store'])->name('trainer-certifications.store');
+        Route::get('/{trainerCertification}', [TrainerCertificationController::class, 'show'])->name('trainer-certifications.show');
+        Route::put('/{trainerCertification}', [TrainerCertificationController::class, 'update'])->name('trainer-certifications.update');
+        Route::delete('/{trainerCertification}', [TrainerCertificationController::class, 'destroy'])->name('trainer-certifications.destroy');
+        
+        // Certification actions
+        Route::post('/{trainerCertification}/verify', [TrainerCertificationController::class, 'verify'])->name('trainer-certifications.verify');
+        Route::post('/{trainerCertification}/unverify', [TrainerCertificationController::class, 'unverify'])->name('trainer-certifications.unverify');
+        
+        // Get certifications by trainer
+        Route::get('/trainer/{trainerProfile}', [TrainerCertificationController::class, 'getByTrainer'])->name('trainer-certifications.by-trainer');
+    });
+
+    // Trainer Specialty management routes
+    Route::prefix('trainer-specialties')->group(function () {
+        Route::get('/', [TrainerSpecialtyController::class, 'index'])->name('trainer-specialties.index');
+        Route::post('/', [TrainerSpecialtyController::class, 'store'])->name('trainer-specialties.store');
+        Route::post('/bulk', [TrainerSpecialtyController::class, 'bulkStore'])->name('trainer-specialties.bulk-store');
+        Route::get('/popular', [TrainerSpecialtyController::class, 'getPopular'])->name('trainer-specialties.popular');
+        Route::get('/{trainerSpecialty}', [TrainerSpecialtyController::class, 'show'])->name('trainer-specialties.show');
+        Route::put('/{trainerSpecialty}', [TrainerSpecialtyController::class, 'update'])->name('trainer-specialties.update');
+        Route::delete('/{trainerSpecialty}', [TrainerSpecialtyController::class, 'destroy'])->name('trainer-specialties.destroy');
+        
+        // Get specialties by trainer
+        Route::get('/trainer/{trainerProfile}', [TrainerSpecialtyController::class, 'getByTrainer'])->name('trainer-specialties.by-trainer');
+    });
+
+    // Trainer Availability management routes
+    Route::prefix('trainer-availability')->group(function () {
+        Route::get('/', [TrainerAvailabilityController::class, 'index'])->name('trainer-availability.index');
+        Route::post('/', [TrainerAvailabilityController::class, 'store'])->name('trainer-availability.store');
+        Route::post('/bulk-update-status', [TrainerAvailabilityController::class, 'bulkUpdateStatus'])->name('trainer-availability.bulk-update-status');
+        Route::get('/{trainerAvailability}', [TrainerAvailabilityController::class, 'show'])->name('trainer-availability.show');
+        Route::put('/{trainerAvailability}', [TrainerAvailabilityController::class, 'update'])->name('trainer-availability.update');
+        Route::delete('/{trainerAvailability}', [TrainerAvailabilityController::class, 'destroy'])->name('trainer-availability.destroy');
+        
+        // Get availability by trainer
+        Route::get('/trainer/{trainerProfile}', [TrainerAvailabilityController::class, 'getByTrainer'])->name('trainer-availability.by-trainer');
+        Route::get('/trainer/{trainerProfile}/weekly-schedule', [TrainerAvailabilityController::class, 'getWeeklySchedule'])->name('trainer-availability.weekly-schedule');
+    });
+
+    // Trainer Location management routes
+    Route::prefix('trainer-locations')->group(function () {
+        Route::get('/', [TrainerLocationController::class, 'index'])->name('trainer-locations.index');
+        Route::post('/', [TrainerLocationController::class, 'store'])->name('trainer-locations.store');
+        Route::get('/nearby', [TrainerLocationController::class, 'findNearby'])->name('trainer-locations.nearby');
+        Route::get('/statistics', [TrainerLocationController::class, 'getStats'])->name('trainer-locations.statistics');
+        Route::get('/{trainerLocation}', [TrainerLocationController::class, 'show'])->name('trainer-locations.show');
+        Route::put('/{trainerLocation}', [TrainerLocationController::class, 'update'])->name('trainer-locations.update');
+        Route::delete('/{trainerLocation}', [TrainerLocationController::class, 'destroy'])->name('trainer-locations.destroy');
+        
+        // Location actions
+        Route::post('/{trainerLocation}/set-primary', [TrainerLocationController::class, 'setPrimary'])->name('trainer-locations.set-primary');
+        
+        // Get locations by trainer
+        Route::get('/trainer/{trainerProfile}', [TrainerLocationController::class, 'getByTrainer'])->name('trainer-locations.by-trainer');
+    });
+
+    // Trainer Session management routes
+    Route::prefix('trainer-sessions')->group(function () {
+        Route::get('/', [TrainerSessionController::class, 'index'])->name('trainer-sessions.index');
+        Route::post('/', [TrainerSessionController::class, 'store'])->name('trainer-sessions.store');
+        Route::get('/statistics', [TrainerSessionController::class, 'getStats'])->name('trainer-sessions.statistics');
+        Route::get('/my-sessions', [TrainerSessionController::class, 'getByClient'])->name('trainer-sessions.my-sessions');
+        Route::get('/{trainerSession}', [TrainerSessionController::class, 'show'])->name('trainer-sessions.show');
+        Route::put('/{trainerSession}', [TrainerSessionController::class, 'update'])->name('trainer-sessions.update');
+        Route::delete('/{trainerSession}', [TrainerSessionController::class, 'destroy'])->name('trainer-sessions.destroy');
+        
+        // Session actions
+        Route::post('/{trainerSession}/cancel', [TrainerSessionController::class, 'cancel'])->name('trainer-sessions.cancel');
+        Route::post('/{trainerSession}/complete', [TrainerSessionController::class, 'complete'])->name('trainer-sessions.complete');
+        
+        // Get sessions by trainer
+        Route::get('/trainer/{trainerProfile}', [TrainerSessionController::class, 'getByTrainer'])->name('trainer-sessions.by-trainer');
     });
     
     // Member-only routes (all authenticated users can access)

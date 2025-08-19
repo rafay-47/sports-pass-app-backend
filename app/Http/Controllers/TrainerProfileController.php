@@ -23,12 +23,43 @@ class TrainerProfileController extends Controller
         $query = TrainerProfile::with([
             'user:id,name,email,phone,gender',
             'sport:id,name,display_name,icon,color',
-            'tier:id,tier_name,display_name,price'
+            'tier:id,tier_name,display_name,price',
+            'specialties' => function ($query) {
+                $query->orderBy('specialty', 'asc');
+            },
+            'certifications' => function ($query) {
+                $query->where('is_verified', true)
+                      ->orderBy('certification_name', 'asc');
+            },
+            'locations' => function ($query) use ($request) {
+                // Show all locations by default, or filter by is_primary if requested
+                if ($request->boolean('primary_locations_only')) {
+                    $query->where('is_primary', true);
+                }
+                $query->orderBy('is_primary', 'desc')
+                      ->orderBy('location_type', 'asc');
+            },
+            'availability' => function ($query) {
+                $query->where('is_available', true)
+                      ->orderByRaw("
+                          CASE day_of_week 
+                              WHEN 'Monday' THEN 1
+                              WHEN 'Tuesday' THEN 2 
+                              WHEN 'Wednesday' THEN 3
+                              WHEN 'Thursday' THEN 4
+                              WHEN 'Friday' THEN 5
+                              WHEN 'Saturday' THEN 6
+                              WHEN 'Sunday' THEN 7
+                          END ASC
+                      ")
+                      ->orderBy('start_time', 'asc');
+            }
         ]);
 
         // Role-based filtering
-        if (!in_array($request->user()->user_role, ['admin', 'owner'])) {
-            // Regular users can only see verified and available trainers
+        $user = $request->user();
+        if (!$user || !in_array($user->user_role, ['admin', 'owner'])) {
+            // Regular users and unauthenticated users can only see verified and available trainers
             $query->verified()->available();
         }
 
@@ -153,7 +184,11 @@ class TrainerProfileController extends Controller
             $trainerProfile->load([
                 'user:id,name,email,phone,gender',
                 'sport:id,name,display_name,icon,color',
-                'tier:id,tier_name,display_name,price'
+                'tier:id,tier_name,display_name,price',
+                'specialties',
+                'certifications',
+                'locations',
+                'availability'
             ]);
 
             DB::commit();
@@ -187,18 +222,53 @@ class TrainerProfileController extends Controller
             'user:id,name,email,phone,gender,profile_image_url,join_date',
             'sport:id,name,display_name,icon,color',
             'tier:id,tier_name,display_name,price,features',
-            // TODO: Add these when models are created
-            // 'specialties',
-            // 'certifications' => function ($query) {
-            //     $query->where('is_verified', true);
-            // },
-            // 'locations'
+            'specialties' => function ($query) {
+                $query->orderBy('specialty', 'asc');
+            },
+            'certifications' => function ($query) {
+                $query->orderBy('is_verified', 'desc')
+                      ->orderBy('certification_name', 'asc');
+            },
+            'locations' => function ($query) use ($request) {
+                // Show all locations by default, or filter by is_primary if requested
+                if ($request->boolean('primary_locations_only')) {
+                    $query->where('is_primary', true);
+                }
+                $query->orderBy('is_primary', 'desc')
+                      ->orderBy('location_type', 'asc');
+            },
+            'availability' => function ($query) {
+                $query->where('is_available', true)
+                      ->orderByRaw("
+                          CASE day_of_week 
+                              WHEN 'Monday' THEN 1
+                              WHEN 'Tuesday' THEN 2 
+                              WHEN 'Wednesday' THEN 3
+                              WHEN 'Thursday' THEN 4
+                              WHEN 'Friday' THEN 5
+                              WHEN 'Saturday' THEN 6
+                              WHEN 'Sunday' THEN 7
+                          END ASC
+                      ")
+                      ->orderBy('start_time', 'asc');
+            }
         ]);
 
-        // TODO: Load availability when model is created
-        // if ($request->boolean('include_availability')) {
-        //     $trainerProfile->load('availability');
-        // }
+        // Load recent sessions if requested or for authenticated users viewing their own trainers
+        if ($request->boolean('include_sessions') || 
+            ($request->user() && $request->user()->user_role !== 'member')) {
+            $trainerProfile->load([
+                'sessions' => function ($query) {
+                    $query->with([
+                        'traineeUser:id,name',
+                        'traineeMembership:id,membership_number,status'
+                    ])
+                    ->where('status', '!=', 'cancelled')
+                    ->orderBy('session_time', 'desc')
+                    ->limit(10);
+                }
+            ]);
+        }
 
         return response()->json([
             'status' => 'success',
@@ -218,7 +288,11 @@ class TrainerProfileController extends Controller
             $trainerProfile->load([
                 'user:id,name,email,phone,gender',
                 'sport:id,name,display_name,icon,color',
-                'tier:id,tier_name,display_name,price'
+                'tier:id,tier_name,display_name,price',
+                'specialties',
+                'certifications',
+                'locations',
+                'availability'
             ]);
 
             return response()->json([
@@ -445,11 +519,10 @@ class TrainerProfileController extends Controller
         $trainerProfile = TrainerProfile::with([
             'sport:id,name,display_name,icon,color',
             'tier:id,tier_name,display_name,price,features',
-            // TODO: Add these when models are created
-            // 'specialties',
-            // 'certifications',
-            // 'locations',
-            // 'availability'
+            'specialties',
+            'certifications',
+            'locations',
+            'availability'
         ])->where('user_id', $request->user()->id)->first();
 
         if (!$trainerProfile) {

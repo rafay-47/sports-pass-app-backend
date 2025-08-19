@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('trainer_profiles', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('user_id');
+            $table->uuid('user_id')->unique(); // Make user_id globally unique
             $table->uuid('sport_id');
             $table->uuid('tier_id');
             $table->integer('experience_years');
             $table->text('bio');
-            $table->decimal('hourly_rate', 8, 2)->nullable();
+            $table->decimal('hourly_rate', 10, 2)->nullable(); // Update precision
             $table->decimal('rating', 3, 2)->default(0.00);
             $table->integer('total_sessions')->default(0);
             $table->decimal('total_earnings', 10, 2)->default(0.00);
@@ -43,9 +43,6 @@ return new class extends Migration
             $table->index(['is_verified']);
             $table->index(['is_available']);
             $table->index(['gender_preference']);
-
-            // Unique constraint to prevent duplicate profiles per user per sport
-            $table->unique(['user_id', 'sport_id']);
         });
     }
 

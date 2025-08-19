@@ -29,6 +29,26 @@ class SportServiceController extends Controller
             $query->where('is_active', $request->boolean('active'));
         }
 
+        // Filter by service type
+        if ($request->filled('type')) {
+            $query->byType($request->type);
+        }
+
+        // Filter by popular services
+        if ($request->boolean('popular_only')) {
+            $query->popular();
+        }
+
+        // Filter by minimum rating
+        if ($request->filled('min_rating')) {
+            $query->byMinRating($request->min_rating);
+        }
+
+        // Filter trainer services only
+        if ($request->boolean('trainers_only')) {
+            $query->trainers();
+        }
+
         // Search functionality
         if ($request->filled('search')) {
             $search = $request->get('search');
@@ -41,7 +61,13 @@ class SportServiceController extends Controller
         // Sorting
         $sortBy = $request->get('sort_by', 'service_name');
         $sortOrder = $request->get('sort_order', 'asc');
-        $query->orderBy($sortBy, $sortOrder);
+        
+        // Handle special sorting cases
+        if ($sortBy === 'rating') {
+            $query->orderByRating($sortOrder);
+        } else {
+            $query->orderBy($sortBy, $sortOrder);
+        }
 
         // Pagination
         $perPage = $request->get('per_page', 15);
@@ -263,6 +289,148 @@ class SportServiceController extends Controller
                 'total_discounted_price' => $servicesPrices->sum('discounted_price'),
                 'total_savings' => $servicesPrices->sum('savings'),
                 'services' => $servicesPrices
+            ]
+        ]);
+    }
+
+    /**
+     * Get popular services across all sports.
+     */
+    public function getPopularServices(Request $request): JsonResponse
+    {
+        $query = SportService::with('sport:id,name,display_name')
+            ->popular()
+            ->active();
+
+        // Filter by service type
+        if ($request->filled('type')) {
+            $query->byType($request->type);
+        }
+
+        // Filter by minimum rating
+        if ($request->filled('min_rating')) {
+            $query->byMinRating($request->min_rating);
+        }
+
+        $services = $query->orderByRating('desc')
+            ->limit($request->get('limit', 10))
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'services' => $services
+            ]
+        ]);
+    }
+
+    /**
+     * Get services by type.
+     */
+    public function getServicesByType(Request $request, string $type): JsonResponse
+    {
+        $query = SportService::with('sport:id,name,display_name')
+            ->byType($type)
+            ->active();
+
+        // Filter by sport
+        if ($request->filled('sport_id')) {
+            $query->where('sport_id', $request->sport_id);
+        }
+
+        // Filter by minimum rating
+        if ($request->filled('min_rating')) {
+            $query->byMinRating($request->min_rating);
+        }
+
+        // Filter by popular services
+        if ($request->boolean('popular_only')) {
+            $query->popular();
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'rating');
+        $sortOrder = $request->get('sort_order', 'desc');
+        
+        if ($sortBy === 'rating') {
+            $query->orderByRating($sortOrder);
+        } else {
+            $query->orderBy($sortBy, $sortOrder);
+        }
+
+        // Pagination
+        $perPage = $request->get('per_page', 15);
+        $services = $query->paginate($perPage);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'type' => $type,
+                'services' => $services->items(),
+                'pagination' => [
+                    'current_page' => $services->currentPage(),
+                    'last_page' => $services->lastPage(),
+                    'per_page' => $services->perPage(),
+                    'total' => $services->total(),
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Toggle popular status of a service.
+     */
+    public function togglePopular(SportService $sportService): JsonResponse
+    {
+        $sportService->update([
+            'is_popular' => !$sportService->is_popular
+        ]);
+
+        $sportService->load('sport:id,name,display_name');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Service popular status updated successfully',
+            'data' => [
+                'service' => $sportService
+            ]
+        ]);
+    }
+
+    /**
+     * Get service statistics.
+     */
+    public function getStatistics(): JsonResponse
+    {
+        $stats = [
+            'total_services' => SportService::count(),
+            'active_services' => SportService::active()->count(),
+            'popular_services' => SportService::popular()->count(),
+            'average_rating' => round(SportService::where('rating', '>', 0)->avg('rating'), 2),
+            'type_breakdown' => SportService::selectRaw('type, COUNT(*) as count, AVG(rating) as avg_rating')
+                ->groupBy('type')
+                ->orderBy('count', 'desc')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'type' => $item->type,
+                        'count' => $item->count,
+                        'average_rating' => round($item->avg_rating, 2)
+                    ];
+                }),
+            'rating_distribution' => [
+                'excellent' => SportService::where('rating', '>=', 4.5)->count(),
+                'very_good' => SportService::whereBetween('rating', [4.0, 4.49])->count(),
+                'good' => SportService::whereBetween('rating', [3.5, 3.99])->count(),
+                'average' => SportService::whereBetween('rating', [3.0, 3.49])->count(),
+                'below_average' => SportService::where('rating', '<', 3.0)->count(),
+            ]
+        ];
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'statistics' => $stats
             ]
         ]);
     }

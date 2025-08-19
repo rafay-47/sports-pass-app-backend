@@ -28,6 +28,9 @@ class StoreSportServiceRequest extends FormRequest
             'base_price' => 'nullable|numeric|min:0|max:99999999.99',
             'duration_minutes' => 'nullable|integer|min:1|max:1440',
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'rating' => 'nullable|numeric|min:0|max:5',
+            'type' => 'nullable|in:trainer,facility,equipment,class,consultation,other',
+            'is_popular' => 'boolean',
             'is_active' => 'boolean'
         ];
     }
@@ -51,6 +54,10 @@ class StoreSportServiceRequest extends FormRequest
             'discount_percentage.numeric' => 'The discount percentage must be a valid number.',
             'discount_percentage.min' => 'The discount percentage must be at least 0.',
             'discount_percentage.max' => 'The discount percentage must not exceed 100.',
+            'rating.numeric' => 'The rating must be a valid number.',
+            'rating.min' => 'The rating must be at least 0.',
+            'rating.max' => 'The rating must not exceed 5.',
+            'type.in' => 'The service type must be one of: trainer, facility, equipment, class, consultation, other.',
         ];
     }
 }

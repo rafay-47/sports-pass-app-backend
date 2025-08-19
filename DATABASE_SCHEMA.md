@@ -91,7 +91,7 @@ CREATE TABLE sport_services (\
 );\
 ```\
 \
-### 4. Sport Pricing Table\
+### 4. Sport Tiers Table\
 ```sql\
 CREATE TABLE tiers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

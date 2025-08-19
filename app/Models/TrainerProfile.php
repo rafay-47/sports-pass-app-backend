@@ -82,48 +82,43 @@ class TrainerProfile extends Model
 
     /**
      * Relationship: TrainerProfile has many certifications.
-     * TODO: Uncomment when TrainerCertification model is created
      */
-    // public function certifications(): HasMany
-    // {
-    //     return $this->hasMany(TrainerCertification::class);
-    // }
+    public function certifications(): HasMany
+    {
+        return $this->hasMany(TrainerCertification::class);
+    }
 
     /**
      * Relationship: TrainerProfile has many specialties.
-     * TODO: Uncomment when TrainerSpecialty model is created
      */
-    // public function specialties(): HasMany
-    // {
-    //     return $this->hasMany(TrainerSpecialty::class);
-    // }
+    public function specialties(): HasMany
+    {
+        return $this->hasMany(TrainerSpecialty::class);
+    }
 
     /**
      * Relationship: TrainerProfile has many availability slots.
-     * TODO: Uncomment when TrainerAvailability model is created
      */
-    // public function availability(): HasMany
-    // {
-    //     return $this->hasMany(TrainerAvailability::class);
-    // }
+    public function availability(): HasMany
+    {
+        return $this->hasMany(TrainerAvailability::class);
+    }
 
     /**
      * Relationship: TrainerProfile has many locations.
-     * TODO: Uncomment when TrainerLocation model is created
      */
-    // public function locations(): HasMany
-    // {
-    //     return $this->hasMany(TrainerLocation::class);
-    // }
+    public function locations(): HasMany
+    {
+        return $this->hasMany(TrainerLocation::class);
+    }
 
     /**
      * Relationship: TrainerProfile has many trainer sessions.
-     * TODO: Uncomment when TrainerSession model is created
      */
-    // public function sessions(): HasMany
-    // {
-    //     return $this->hasMany(TrainerSession::class);
-    // }
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(TrainerSession::class);
+    }
 
     /**
      * Scope: Verified trainers.
@@ -305,21 +300,29 @@ class TrainerProfile extends Model
 
     /**
      * Check if trainer is available on specific day and time.
-     * TODO: Uncomment when TrainerAvailability model is created
      */
-    // public function isAvailableAt(int $dayOfWeek, string $time): bool
-    // {
-    //     if (!$this->is_available) {
-    //         return false;
-    //     }
+    public function isAvailableAt($dayOfWeek, string $time): bool
+    {
+        if (!$this->is_available) {
+            return false;
+        }
 
-    //     return $this->availability()
-    //         ->where('day_of_week', $dayOfWeek)
-    //         ->where('start_time', '<=', $time)
-    //         ->where('end_time', '>=', $time)
-    //         ->where('is_available', true)
-    //         ->exists();
-    // }
+        // Convert integer day to day name if needed
+        if (is_numeric($dayOfWeek)) {
+            $dayNames = [
+                0 => 'Sunday', 1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday',
+                4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday'
+            ];
+            $dayOfWeek = $dayNames[(int)$dayOfWeek] ?? 'Unknown';
+        }
+
+        return $this->availability()
+            ->where('day_of_week', $dayOfWeek)
+            ->where('start_time', '<=', $time)
+            ->where('end_time', '>=', $time)
+            ->where('is_available', true)
+            ->exists();
+    }
 
     /**
      * Get the route key name for model binding.
@@ -327,5 +330,63 @@ class TrainerProfile extends Model
     public function getRouteKeyName(): string
     {
         return 'id';
+    }
+
+    /**
+     * Validate business rules that can't be enforced at database level.
+     */
+    public function validateBusinessRules(): void
+    {
+        // Validate that trainer and tier belong to the same sport
+        if ($this->sport_id && $this->tier_id) {
+            $tier = Tier::find($this->tier_id);
+            if ($tier && $tier->sport_id !== $this->sport_id) {
+                throw new \InvalidArgumentException(
+                    "Trainer's sport must match the tier's sport. Trainer sport: {$this->sport_id}, Tier sport: {$tier->sport_id}"
+                );
+            }
+        }
+
+        // Validate rating range (additional check beyond database constraint)
+        if ($this->rating !== null && ($this->rating < 0 || $this->rating > 5)) {
+            throw new \InvalidArgumentException("Rating must be between 0 and 5. Got: {$this->rating}");
+        }
+
+        // Validate experience years
+        if ($this->experience_years !== null && $this->experience_years < 0) {
+            throw new \InvalidArgumentException("Experience years cannot be negative. Got: {$this->experience_years}");
+        }
+
+        // Validate hourly rate
+        if ($this->hourly_rate !== null && $this->hourly_rate <= 0) {
+            throw new \InvalidArgumentException("Hourly rate must be positive when set. Got: {$this->hourly_rate}");
+        }
+
+        // Validate earnings
+        if ($this->total_earnings !== null && $this->total_earnings < 0) {
+            throw new \InvalidArgumentException("Total earnings cannot be negative. Got: {$this->total_earnings}");
+        }
+
+        if ($this->monthly_earnings !== null && $this->monthly_earnings < 0) {
+            throw new \InvalidArgumentException("Monthly earnings cannot be negative. Got: {$this->monthly_earnings}");
+        }
+
+        // Validate sessions count
+        if ($this->total_sessions !== null && $this->total_sessions < 0) {
+            throw new \InvalidArgumentException("Total sessions cannot be negative. Got: {$this->total_sessions}");
+        }
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Validate business rules before saving
+        static::saving(function ($model) {
+            $model->validateBusinessRules();
+        });
     }
 }

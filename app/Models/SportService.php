@@ -53,6 +53,9 @@ class SportService extends Model
         'base_price',
         'duration_minutes',
         'discount_percentage',
+        'rating',
+        'type',
+        'is_popular',
         'is_active',
     ];
 
@@ -65,6 +68,8 @@ class SportService extends Model
         'base_price' => 'decimal:2',
         'discount_percentage' => 'decimal:2',
         'duration_minutes' => 'integer',
+        'rating' => 'decimal:2',
+        'is_popular' => 'boolean',
         'is_active' => 'boolean',
     ];
 
@@ -85,6 +90,46 @@ class SportService extends Model
     }
 
     /**
+     * Scope a query to only include popular services.
+     */
+    public function scopePopular($query)
+    {
+        return $query->where('is_popular', true);
+    }
+
+    /**
+     * Scope a query to filter by service type.
+     */
+    public function scopeByType($query, $type)
+    {
+        return $query->where('type', $type);
+    }
+
+    /**
+     * Scope a query to filter by minimum rating.
+     */
+    public function scopeByMinRating($query, $minRating)
+    {
+        return $query->where('rating', '>=', $minRating);
+    }
+
+    /**
+     * Scope a query to order by rating.
+     */
+    public function scopeOrderByRating($query, $direction = 'desc')
+    {
+        return $query->orderBy('rating', $direction);
+    }
+
+    /**
+     * Scope a query to get trainer services only.
+     */
+    public function scopeTrainers($query)
+    {
+        return $query->where('type', 'trainer');
+    }
+
+    /**
      * Calculate the discounted price.
      */
     public function getDiscountedPriceAttribute()
@@ -95,6 +140,40 @@ class SportService extends Model
 
         $discountAmount = ($this->base_price * $this->discount_percentage) / 100;
         return round($this->base_price - $discountAmount, 2);
+    }
+
+    /**
+     * Get rating category based on rating value.
+     */
+    public function getRatingCategoryAttribute(): string
+    {
+        if ($this->rating >= 4.5) {
+            return 'excellent';
+        } elseif ($this->rating >= 4.0) {
+            return 'very_good';
+        } elseif ($this->rating >= 3.5) {
+            return 'good';
+        } elseif ($this->rating >= 3.0) {
+            return 'average';
+        } else {
+            return 'below_average';
+        }
+    }
+
+    /**
+     * Check if service is trainer-related.
+     */
+    public function getIsTrainerServiceAttribute(): bool
+    {
+        return $this->type === 'trainer';
+    }
+
+    /**
+     * Get formatted type name.
+     */
+    public function getFormattedTypeAttribute(): string
+    {
+        return ucfirst(str_replace('_', ' ', $this->type));
     }
 
     /**
