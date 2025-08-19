@@ -66,8 +66,8 @@ Route::prefix('tiers')->group(function () {
 // Public trainer profile routes (read-only)
 Route::prefix('trainers')->group(function () {
     Route::get('/', [TrainerProfileController::class, 'index'])->name('trainers.index');
-    Route::get('/{trainerProfile}', [TrainerProfileController::class, 'show'])->name('trainers.show');
     Route::get('/sport/{sport}', [TrainerProfileController::class, 'getBySport'])->name('trainers.by-sport');
+    Route::get('/{trainerProfile}', [TrainerProfileController::class, 'show'])->name('trainers.show');
 });
 
 // Protected routes

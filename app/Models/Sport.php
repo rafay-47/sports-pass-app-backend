@@ -86,6 +86,14 @@ class Sport extends Model
     }
 
     /**
+     * Get the trainer profiles for the sport.
+     */
+    public function trainerProfiles(): HasMany
+    {
+        return $this->hasMany(TrainerProfile::class);
+    }
+
+    /**
      * Get tiers available on a specific date (more efficient for eager loading).
      */
     public function availableOnDate($date = null): HasMany
