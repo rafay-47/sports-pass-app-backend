@@ -75,45 +75,55 @@ class TrainerSessionController extends Controller
     {
         $request->validate([
             'trainer_profile_id' => 'required|exists:trainer_profiles,id',
-            'client_user_id' => 'required|exists:users,id',
-            'sport_id' => 'required|exists:sports,id',
+            'trainee_user_id' => 'required|exists:users,id',
+            'trainee_membership_id' => 'required|exists:memberships,id',
             'session_date' => 'required|date|after:today',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
-            'session_fee' => 'required|numeric|min:0',
+            'session_time' => 'required|date_format:H:i',
+            'duration_minutes' => 'required|integer|min:1',
+            'start_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i|after:start_time',
+            'status' => 'nullable|string',
+            'fee_amount' => 'required|numeric|min:0',
+            'payment_status' => 'nullable|string',
+            'location' => 'nullable|string|max:200',
             'notes' => 'nullable|string|max:1000',
+            'trainee_rating' => 'nullable|integer|min:1|max:5',
+            'trainee_feedback' => 'nullable|string',
+            'trainer_notes' => 'nullable|string',
         ]);
 
         // Authorization check
         $trainerProfile = TrainerProfile::findOrFail($request->trainer_profile_id);
         $user = $request->user();
-        
-        if (!$user || (!in_array($user->user_role, ['admin', 'owner']) && 
-            $trainerProfile->user_id !== $user->id && $request->client_user_id !== $user->id)) {
+        if (!$user || (!in_array($user->user_role, ['admin', 'owner']) && $trainerProfile->user_id !== $user->id && $request->trainee_user_id !== $user->id)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized to create this session'
             ], 403);
         }
 
-        // Check for session conflicts
+        // Check for session conflicts (using start_time/end_time if provided, else session_time/duration_minutes)
+        $startTime = $request->start_time ?? $request->session_time;
+        $endTime = $request->end_time;
+        if (!$endTime && $startTime && $request->duration_minutes) {
+            $endTime = date('H:i', strtotime($startTime) + $request->duration_minutes * 60);
+        }
         $conflict = TrainerSession::where('trainer_profile_id', $request->trainer_profile_id)
-                                 ->where('session_date', $request->session_date)
-                                 ->where('status', '!=', 'cancelled')
-                                 ->where(function ($query) use ($request) {
-                                     $query->where(function ($q) use ($request) {
-                                         $q->where('start_time', '<=', $request->start_time)
-                                           ->where('end_time', '>', $request->start_time);
-                                     })->orWhere(function ($q) use ($request) {
-                                         $q->where('start_time', '<', $request->end_time)
-                                           ->where('end_time', '>=', $request->end_time);
-                                     })->orWhere(function ($q) use ($request) {
-                                         $q->where('start_time', '>=', $request->start_time)
-                                           ->where('end_time', '<=', $request->end_time);
-                                     });
-                                 })
-                                 ->exists();
-
+            ->where('session_date', $request->session_date)
+            ->where('status', '!=', 'cancelled')
+            ->where(function ($query) use ($startTime, $endTime) {
+                $query->where(function ($q) use ($startTime) {
+                    $q->where('start_time', '<=', $startTime)
+                        ->where('end_time', '>', $startTime);
+                })->orWhere(function ($q) use ($endTime) {
+                    $q->where('start_time', '<', $endTime)
+                        ->where('end_time', '>=', $endTime);
+                })->orWhere(function ($q) use ($startTime, $endTime) {
+                    $q->where('start_time', '>=', $startTime)
+                        ->where('end_time', '<=', $endTime);
+                });
+            })
+            ->exists();
         if ($conflict) {
             return response()->json([
                 'status' => 'error',
@@ -121,9 +131,25 @@ class TrainerSessionController extends Controller
             ], 422);
         }
 
-        $session = TrainerSession::create($request->all());
-        $session->load(['trainerProfile.user:id,name,email', 'clientUser:id,name,email', 'sport:id,name']);
-
+        $session = TrainerSession::create([
+            'trainer_profile_id' => $request->trainer_profile_id,
+            'trainee_user_id' => $request->trainee_user_id,
+            'trainee_membership_id' => $request->trainee_membership_id,
+            'session_date' => $request->session_date,
+            'session_time' => $request->session_time,
+            'duration_minutes' => $request->duration_minutes,
+            'start_time' => $startTime,
+            'end_time' => $endTime,
+            'status' => $request->status ?? 'scheduled',
+            'fee_amount' => $request->fee_amount,
+            'payment_status' => $request->payment_status ?? 'pending',
+            'location' => $request->location,
+            'notes' => $request->notes,
+            'trainee_rating' => $request->trainee_rating,
+            'trainee_feedback' => $request->trainee_feedback,
+            'trainer_notes' => $request->trainer_notes,
+        ]);
+        $session->load(['trainerProfile.user:id,name,email']);
         return response()->json([
             'status' => 'success',
             'message' => 'Session created successfully',

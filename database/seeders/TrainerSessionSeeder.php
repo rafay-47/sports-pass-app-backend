@@ -20,12 +20,12 @@ class TrainerSessionSeeder extends Seeder
     {
         $trainerProfiles = TrainerProfile::with('sport')->get();
         $clientUsers = User::where('user_role', 'member')->get();
-        
+
         if ($clientUsers->isEmpty()) {
             $this->command->warn('No member users found to create sessions with');
             return;
         }
-        
+
         // Get memberships for clients
         $memberships = \App\Models\Membership::with('user')->get();
         if ($memberships->isEmpty()) {
@@ -41,18 +41,23 @@ class TrainerSessionSeeder extends Seeder
             $sessionCount = rand(3, 15);
             
             for ($i = 0; $i < $sessionCount; $i++) {
-                $membership = $memberships->random();
+                // Only use memberships that match the trainer's sport
+                $matchingMemberships = $memberships->where('sport_id', $trainer->sport_id);
+                if ($matchingMemberships->isEmpty()) {
+                    continue; // skip if no matching membership
+                }
+                $membership = $matchingMemberships->random();
                 $clientUser = $membership->user;
-                
+
                 // Generate sessions from 3 months ago to 2 months in future
                 $sessionDate = fake()->dateTimeBetween('-3 months', '+2 months');
                 $sessionDate = Carbon::parse($sessionDate);
-                
+
                 // Generate session times
                 $startHour = rand(6, 20); // 6 AM to 8 PM
                 $sessionTime = sprintf('%02d:00', $startHour);
                 $durationMinutes = [60, 90, 120, 180][array_rand([60, 90, 120, 180])]; // 1-3 hour sessions
-                
+
                 // Status logic based on date
                 $now = Carbon::now();
                 if ($sessionDate->isFuture()) {
@@ -62,18 +67,21 @@ class TrainerSessionSeeder extends Seeder
                 } else {
                     // Past sessions have various statuses
                     $status = fake()->randomElement(['completed', 'completed', 'completed', 'completed', 'no_show', 'cancelled']);
-                    $paymentStatus = $status === 'completed' ? 'completed' : 
+                    $paymentStatus = $status === 'completed' ? 'completed' :
                                    ($status === 'cancelled' ? 'refunded' : 'pending');
                 }
-                
+
                 // Session fee based on trainer's hourly rate
                 $baseFee = floatval($trainer->hourly_rate ?? 100);
                 $sessionDurationHours = $durationMinutes / 60;
                 $sessionFee = $baseFee * $sessionDurationHours;
-                
+
                 // Add some variation (±20%)
                 $sessionFee = $sessionFee * (0.8 + (rand(0, 40) / 100));
-                
+
+                // Calculate start_time and end_time from session_time and duration_minutes
+                $startTime = $sessionTime;
+                $endTime = date('H:i', strtotime($startTime) + $durationMinutes * 60);
                 $sessionData = [
                     'id' => (string) Str::uuid(),
                     'trainer_profile_id' => $trainer->id,
@@ -82,6 +90,8 @@ class TrainerSessionSeeder extends Seeder
                     'session_date' => $sessionDate->format('Y-m-d'),
                     'session_time' => $sessionTime,
                     'duration_minutes' => $durationMinutes,
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
                     'status' => $status,
                     'fee_amount' => round($sessionFee, 2),
                     'payment_status' => $paymentStatus,
@@ -90,14 +100,14 @@ class TrainerSessionSeeder extends Seeder
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
-                
+
                 // Add rating and feedback for completed sessions
                 if ($status === 'completed') {
                     $sessionData['trainee_rating'] = rand(3, 5); // 3-5 star ratings
                     $sessionData['trainee_feedback'] = $this->generateFeedback($sessionData['trainee_rating']);
                     $sessionData['trainer_notes'] = $this->generateTrainerNotes($sessionData['trainee_rating']);
                 }
-                
+
                 TrainerSession::create($sessionData);
             }
         }

@@ -19,29 +19,29 @@ return new class extends Migration
             $table->date('session_date');
             $table->time('session_time');
             $table->integer('duration_minutes')->default(60);
-            $table->enum('status', ['scheduled', 'completed', 'cancelled', 'no_show'])->default('scheduled');
-            $table->decimal('fee_amount', 8, 2);
-            $table->enum('payment_status', ['pending', 'completed', 'failed', 'refunded'])->default('pending');
+            $table->time('start_time')->nullable();
+            $table->time('end_time')->nullable();
+            $table->string('status', 20)->default('scheduled');
+            $table->decimal('fee_amount', 10, 2);
+            $table->string('payment_status', 20)->default('pending');
             $table->string('location', 200)->nullable();
             $table->text('notes')->nullable();
-            $table->integer('trainee_rating')->nullable()->check('trainee_rating >= 1 AND trainee_rating <= 5');
+            $table->integer('trainee_rating')->nullable();
             $table->text('trainee_feedback')->nullable();
             $table->text('trainer_notes')->nullable();
-            $table->timestamps();
-            
+            $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
+            $table->timestamp('updated_at')->default(DB::raw('CURRENT_TIMESTAMP'));
+
             // Foreign key constraints
             $table->foreign('trainer_profile_id')->references('id')->on('trainer_profiles')->onDelete('cascade');
             $table->foreign('trainee_user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('trainee_membership_id')->references('id')->on('memberships')->onDelete('cascade');
-            
+
             // Indexes for performance
-            $table->index(['trainer_profile_id']);
-            $table->index(['trainee_user_id']);
-            $table->index(['session_date']);
-            $table->index(['status']);
-            $table->index(['payment_status']);
-            $table->index(['trainer_profile_id', 'session_date']);
-            $table->index(['trainee_user_id', 'session_date']);
+            $table->index('trainer_profile_id', 'idx_trainer_sessions_trainer');
+            $table->index('trainee_user_id', 'idx_trainer_sessions_trainee');
+            $table->index('session_date', 'idx_trainer_sessions_date');
+            $table->index('status', 'idx_trainer_sessions_status');
         });
     }
 
