@@ -25,6 +25,10 @@ use App\Http\Controllers\TrainerSessionController;
 |
 */
 
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok']);
+})->name('health');
+
 // Public authentication routes with rate limiting
 Route::prefix('auth')->middleware(['throttle:10,1'])->group(function () {
     Route::post('register', [AuthController::class, 'register'])->name('register');
@@ -313,4 +317,5 @@ Route::middleware('auth:sanctum')->group(function () {
             ]
         ]);
     })->name('user.current');
+    
 });
