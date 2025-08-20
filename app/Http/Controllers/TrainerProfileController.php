@@ -421,43 +421,122 @@ class TrainerProfileController extends Controller
     public function getBySport(Request $request, Sport $sport): JsonResponse
     {
         $query = $sport->trainerProfiles()->with([
-            'user:id,name,email,phone,gender',
-            'tier:id,tier_name,display_name,price'
+            'user:id,name,email,phone,gender,profile_image_url,join_date',
+            'tier:id,tier_name,display_name,price,features',
+            'specialties' => function ($query) {
+                $query->orderBy('specialty', 'asc');
+            },
+            'certifications' => function ($query) {
+                $query->where('is_verified', true)
+                      ->orderBy('certification_name', 'asc');
+            },
+            'locations' => function ($query) use ($request) {
+                // Show all locations by default, or filter by is_primary if requested
+                if ($request->boolean('primary_locations_only')) {
+                    $query->where('is_primary', true);
+                }
+                $query->orderBy('is_primary', 'desc')
+                      ->orderBy('location_type', 'asc');
+            },
+            'availability' => function ($query) {
+                $query->where('is_available', true)
+                      ->orderByRaw("
+                          CASE day_of_week 
+                              WHEN 'Monday' THEN 1
+                              WHEN 'Tuesday' THEN 2 
+                              WHEN 'Wednesday' THEN 3
+                              WHEN 'Thursday' THEN 4
+                              WHEN 'Friday' THEN 5
+                              WHEN 'Saturday' THEN 6
+                              WHEN 'Sunday' THEN 7
+                          END ASC
+                      ")
+                      ->orderBy('start_time', 'asc');
+            }
         ]);
 
-        // Filter by verification status
-        if ($request->has('verified')) {
-            $query->where('is_verified', $request->boolean('verified'));
+        // Role-based filtering
+        $user = $request->user();
+        if (!$user || !in_array($user->user_role, ['admin', 'owner'])) {
+            // Regular users and unauthenticated users can only see verified and available trainers
+            $query->verified()->available();
         } else {
-            // Default to verified trainers for public API
-            $query->verified();
+            // Filter by verification status for admins/owners
+            if ($request->has('verified')) {
+                $query->where('is_verified', $request->boolean('verified'));
+            }
+
+            // Filter by availability for admins/owners
+            if ($request->has('available')) {
+                $query->where('is_available', $request->boolean('available'));
+            }
         }
 
-        // Filter by availability
-        if ($request->has('available')) {
-            $query->where('is_available', $request->boolean('available'));
-        } else {
-            // Default to available trainers
-            $query->available();
+        // Filter by active trainers (verified and available)
+        if ($request->boolean('active')) {
+            $query->active();
         }
 
         // Filter by rating range
-        if ($request->filled('min_rating')) {
-            $query->where('rating', '>=', $request->min_rating);
+        if ($request->filled('min_rating') || $request->filled('max_rating')) {
+            $query->byRating($request->min_rating, $request->max_rating);
         }
 
-        // Sort by rating by default
+        // Filter by experience range
+        if ($request->filled('min_experience') || $request->filled('max_experience')) {
+            $query->byExperience($request->min_experience, $request->max_experience);
+        }
+
+        // Filter by hourly rate range
+        if ($request->filled('min_rate') || $request->filled('max_rate')) {
+            $query->byHourlyRate($request->min_rate, $request->max_rate);
+        }
+
+        // Filter by gender preference
+        if ($request->filled('gender_preference')) {
+            $query->byGenderPreference($request->gender_preference);
+        }
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', function ($userQuery) use ($search) {
+                    $userQuery->where('name', 'ILIKE', "%{$search}%")
+                             ->orWhere('email', 'ILIKE', "%{$search}%");
+                })
+                ->orWhere('bio', 'ILIKE', "%{$search}%");
+            });
+        }
+
+        // Sorting
         $sortBy = $request->get('sort_by', 'rating');
         $sortOrder = $request->get('sort_order', 'desc');
-        $query->orderBy($sortBy, $sortOrder);
+        
+        // Handle sorting by related fields
+        if ($sortBy === 'user_name') {
+            $query->join('users', 'trainer_profiles.user_id', '=', 'users.id')
+                  ->orderBy('users.name', $sortOrder)
+                  ->select('trainer_profiles.*');
+        } else {
+            $query->orderBy($sortBy, $sortOrder);
+        }
 
-        $trainers = $query->get();
+        // Pagination
+        $perPage = $request->get('per_page', 15);
+        $trainers = $query->paginate($perPage);
 
         return response()->json([
             'status' => 'success',
             'data' => [
-                'sport' => $sport->only(['id', 'name', 'display_name']),
-                'trainers' => $trainers
+                'sport' => $sport->only(['id', 'name', 'display_name', 'icon', 'color']),
+                'trainers' => $trainers->items(),
+                'pagination' => [
+                    'current_page' => $trainers->currentPage(),
+                    'last_page' => $trainers->lastPage(),
+                    'per_page' => $trainers->perPage(),
+                    'total' => $trainers->total(),
+                ]
             ]
         ]);
     }
