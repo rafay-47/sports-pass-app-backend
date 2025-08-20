@@ -13,6 +13,24 @@ class TrainerSession extends Model
     use HasFactory;
 
     /**
+     * Get the client user (trainee) for this session.
+     */
+    public function clientUser()
+    {
+        return $this->belongsTo(User::class, 'trainee_user_id');
+    }
+
+    /**
+     * Get the sport for this session (if sport_id exists on the table).
+     */
+    public function sport()
+    {
+        return $this->belongsTo(Sport::class, 'sport_id');
+    }
+
+    use HasFactory;
+
+    /**
      * Indicates if the IDs are auto-incrementing.
      *
      * @var bool
