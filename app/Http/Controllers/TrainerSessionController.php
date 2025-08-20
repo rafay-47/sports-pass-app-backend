@@ -21,9 +21,9 @@ class TrainerSessionController extends Controller
             $query->where('trainer_profile_id', $request->trainer_profile_id);
         }
 
-        // Filter by client
-        if ($request->filled('client_user_id')) {
-            $query->where('client_user_id', $request->client_user_id);
+        // Filter by trainee (client)
+        if ($request->filled('trainee_user_id')) {
+            $query->where('trainee_user_id', $request->trainee_user_id);
         }
 
         // Filter by status
@@ -164,7 +164,7 @@ class TrainerSessionController extends Controller
      */
     public function show(TrainerSession $trainerSession): JsonResponse
     {
-        $trainerSession->load(['trainerProfile.user:id,name,email', 'clientUser:id,name,email', 'sport:id,name']);
+    $trainerSession->load(['trainerProfile.user:id,name,email', 'clientUser:id,name,email', 'sport:id,name']);
 
         return response()->json([
             'status' => 'success',
@@ -195,7 +195,7 @@ class TrainerSessionController extends Controller
         
         if (!$user || (!in_array($user->user_role, ['admin', 'owner']) && 
             $trainerSession->trainerProfile->user_id !== $user->id && 
-            $trainerSession->client_user_id !== $user->id)) {
+            $trainerSession->trainee_user_id !== $user->id)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized to update this session'
@@ -210,7 +210,7 @@ class TrainerSessionController extends Controller
             $allowedFields = array_merge($allowedFields, ['session_date', 'start_time', 'end_time', 'session_fee', 'status']);
         }
         
-        if ($trainerSession->client_user_id === $user->id) {
+        if ($trainerSession->trainee_user_id === $user->id) {
             $allowedFields = array_merge($allowedFields, ['rating', 'feedback']);
         }
 
@@ -287,7 +287,7 @@ class TrainerSessionController extends Controller
      */
     public function getByTrainer(Request $request, TrainerProfile $trainerProfile): JsonResponse
     {
-        $query = $trainerProfile->sessions()->with(['clientUser:id,name,email', 'sport:id,name']);
+    $query = $trainerProfile->sessions()->with(['clientUser:id,name,email', 'sport:id,name']);
 
         // Filter by status if requested
         if ($request->filled('status')) {
@@ -328,10 +328,10 @@ class TrainerSessionController extends Controller
     public function getByClient(Request $request): JsonResponse
     {
         $user = $request->user();
-        $clientId = $request->get('client_user_id', $user->id);
+        $traineeId = $request->get('trainee_user_id', $user->id);
 
         // Authorization check
-        if (!in_array($user->user_role, ['admin', 'owner']) && $clientId !== $user->id) {
+        if (!in_array($user->user_role, ['admin', 'owner']) && $traineeId !== $user->id) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized to view these sessions'
@@ -339,7 +339,7 @@ class TrainerSessionController extends Controller
         }
 
         $query = TrainerSession::with(['trainerProfile.user:id,name,email', 'sport:id,name'])
-                              ->where('client_user_id', $clientId);
+                              ->where('trainee_user_id', $traineeId);
 
         // Filter by status if requested
         if ($request->filled('status')) {
@@ -362,7 +362,7 @@ class TrainerSessionController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => [
-                'client_user_id' => $clientId,
+                'trainee_user_id' => $traineeId,
                 'sessions' => $sessions->items(),
                 'pagination' => [
                     'current_page' => $sessions->currentPage(),
