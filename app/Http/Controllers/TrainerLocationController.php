@@ -41,13 +41,7 @@ class TrainerLocationController extends Controller
             $lng = $request->get('longitude');
             $radius = $request->get('radius', 10); // Default 10km
 
-            $query->whereRaw("
-                ST_DWithin(
-                    ST_MakePoint(longitude, latitude)::geography,
-                    ST_MakePoint(?, ?)::geography,
-                    ? * 1000
-                )
-            ", [$lng, $lat, $radius]);
+            $query->withinRadius($lat, $lng, $radius);
         }
 
         // Sort
@@ -57,14 +51,37 @@ class TrainerLocationController extends Controller
         if ($sortBy === 'distance' && $request->filled(['latitude', 'longitude'])) {
             $lat = $request->get('latitude');
             $lng = $request->get('longitude');
-            $query->selectRaw("
-                *, 
-                ST_Distance(
-                    ST_MakePoint(longitude, latitude)::geography,
-                    ST_MakePoint(?, ?)::geography
-                ) / 1000 as distance_km
-            ", [$lng, $lat])
-            ->orderBy('distance_km', $sortOrder);
+            
+            // Get locations and calculate distance using Haversine formula
+            $locations = $query->get();
+            
+            $locations = $locations->map(function ($location) use ($lat, $lng) {
+                $location->distance_km = round($location->distanceTo($lat, $lng), 2);
+                return $location;
+            })->sortBy('distance_km');
+            
+            if ($sortOrder === 'desc') {
+                $locations = $locations->sortByDesc('distance_km');
+            }
+            
+            // Convert back to paginated format
+            $perPage = $request->get('per_page', 15);
+            $currentPage = $request->get('page', 1);
+            $total = $locations->count();
+            $items = $locations->forPage($currentPage, $perPage)->values();
+            
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'locations' => $items,
+                    'pagination' => [
+                        'current_page' => $currentPage,
+                        'last_page' => ceil($total / $perPage),
+                        'per_page' => $perPage,
+                        'total' => $total,
+                    ]
+                ]
+            ]);
         } else {
             $query->orderBy($sortBy, $sortOrder);
         }
@@ -143,7 +160,7 @@ class TrainerLocationController extends Controller
 
         // Calculate distance if user location provided
         if ($request->filled(['latitude', 'longitude'])) {
-            $distance = $trainerLocation->calculateDistance(
+            $distance = $trainerLocation->distanceTo(
                 $request->get('latitude'),
                 $request->get('longitude')
             );
@@ -264,7 +281,7 @@ class TrainerLocationController extends Controller
             $userLng = $request->get('longitude');
             
             $locations->each(function ($location) use ($userLat, $userLng) {
-                $distance = $location->calculateDistance($userLat, $userLng);
+                $distance = $location->distanceTo($userLat, $userLng);
                 $location->distance_km = round($distance, 2);
             });
         }
@@ -295,28 +312,21 @@ class TrainerLocationController extends Controller
         $radius = $request->get('radius', 10); // Default 10km
 
         $query = TrainerLocation::with(['trainerProfile.user:id,name,email'])
-                               ->whereRaw("
-                                   ST_DWithin(
-                                       ST_MakePoint(longitude, latitude)::geography,
-                                       ST_MakePoint(?, ?)::geography,
-                                       ? * 1000
-                                   )
-                               ", [$lng, $lat, $radius])
-                               ->selectRaw("
-                                   *, 
-                                   ST_Distance(
-                                       ST_MakePoint(longitude, latitude)::geography,
-                                       ST_MakePoint(?, ?)::geography
-                                   ) / 1000 as distance_km
-                               ", [$lng, $lat]);
+                               ->withinRadius($lat, $lng, $radius);
 
         if ($request->filled('location_type')) {
             $query->where('location_type', $request->location_type);
         }
 
-        $locations = $query->orderBy('distance_km', 'asc')
-                          ->limit($request->get('limit', 20))
-                          ->get();
+        // Get locations and calculate distances using Haversine formula
+        $locations = $query->get();
+        
+        $locations = $locations->map(function ($location) use ($lat, $lng) {
+            $location->distance_km = round($location->distanceTo($lat, $lng), 2);
+            return $location;
+        })->sortBy('distance_km')
+          ->take($request->get('limit', 20))
+          ->values();
 
         return response()->json([
             'status' => 'success',
