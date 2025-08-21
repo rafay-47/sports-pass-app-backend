@@ -313,4 +313,121 @@ class ServicePurchaseController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Get service purchases by membership.
+     */
+    public function getByMembership(Request $request, Membership $membership): JsonResponse
+    {
+        // Authorization check
+        if (!in_array($request->user()->user_role, ['admin', 'owner']) && 
+            $membership->user_id !== $request->user()->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized to view this membership\'s service purchases'
+            ], 403);
+        }
+
+        $servicePurchases = ServicePurchase::with([
+            'sportService:id,service_name,description,base_price,type,rating,duration_minutes'
+        ])
+            ->where('membership_id', $membership->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate($request->get('per_page', 15));
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'membership' => $membership->load(['sport:id,name,display_name', 'tier:id,tier_name,display_name']),
+                'service_purchases' => $servicePurchases->items(),
+                'pagination' => [
+                    'current_page' => $servicePurchases->currentPage(),
+                    'last_page' => $servicePurchases->lastPage(),
+                    'per_page' => $servicePurchases->perPage(),
+                    'total' => $servicePurchases->total(),
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Get service purchases by sport service.
+     */
+    public function getBySportService(Request $request, SportService $sportService): JsonResponse
+    {
+        $query = ServicePurchase::with([
+            'user:id,name,email',
+            'membership:id,membership_number,sport_id,tier_id',
+            'membership.sport:id,name,display_name',
+            'membership.tier:id,tier_name,display_name'
+        ])->where('sport_service_id', $sportService->id);
+
+        // Role-based filtering
+        if (!in_array($request->user()->user_role, ['admin', 'owner'])) {
+            $query->where('user_id', $request->user()->id);
+        }
+
+        $servicePurchases = $query->orderBy('created_at', 'desc')
+            ->paginate($request->get('per_page', 15));
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'sport_service' => $sportService,
+                'service_purchases' => $servicePurchases->items(),
+                'pagination' => [
+                    'current_page' => $servicePurchases->currentPage(),
+                    'last_page' => $servicePurchases->lastPage(),
+                    'per_page' => $servicePurchases->perPage(),
+                    'total' => $servicePurchases->total(),
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Get service purchase statistics.
+     */
+    public function statistics(Request $request): JsonResponse
+    {
+        $query = ServicePurchase::query();
+
+        // Role-based filtering
+        if (!in_array($request->user()->user_role, ['admin', 'owner'])) {
+            $query->where('user_id', $request->user()->id);
+        }
+
+        $stats = [
+            'total_purchases' => $query->count(),
+            'completed_purchases' => $query->completed()->count(),
+            'upcoming_purchases' => $query->upcoming()->count(),
+            'cancelled_purchases' => $query->cancelled()->count(),
+            'expired_purchases' => $query->expired()->count(),
+            'total_amount_spent' => $query->completed()->sum('amount'),
+            'monthly_amount_spent' => $query->completed()->thisMonth()->sum('amount'),
+            'average_purchase_amount' => $query->completed()->avg('amount'),
+        ];
+
+        // Service breakdown (admin/owner only)
+        if (in_array($request->user()->user_role, ['admin', 'owner'])) {
+            $stats['service_breakdown'] = ServicePurchase::join('sport_services', 'service_purchases.sport_service_id', '=', 'sport_services.id')
+                ->selectRaw('sport_services.service_name, sport_services.type, COUNT(*) as count, SUM(amount) as revenue')
+                ->groupBy('sport_services.id', 'sport_services.service_name', 'sport_services.type')
+                ->orderBy('count', 'desc')
+                ->get();
+
+            $stats['monthly_trends'] = ServicePurchase::selectRaw('DATE_TRUNC(\'month\', created_at) as month, COUNT(*) as count, SUM(amount) as revenue')
+                ->where('created_at', '>=', now()->subMonths(12))
+                ->groupBy('month')
+                ->orderBy('month')
+                ->get();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'statistics' => $stats
+            ]
+        ]);
+    }
 }

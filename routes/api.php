@@ -271,6 +271,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('service-purchases')->group(function () {
         Route::get('/', [ServicePurchaseController::class, 'index'])->name('service-purchases.index');
         Route::post('/', [ServicePurchaseController::class, 'store'])->name('service-purchases.store');
+        Route::get('/statistics', [ServicePurchaseController::class, 'statistics'])->name('service-purchases.statistics');
         Route::get('/{servicePurchase}', [ServicePurchaseController::class, 'show'])->name('service-purchases.show');
         Route::put('/{servicePurchase}', [ServicePurchaseController::class, 'update'])->name('service-purchases.update');
         Route::delete('/{servicePurchase}', [ServicePurchaseController::class, 'destroy'])->name('service-purchases.destroy');
