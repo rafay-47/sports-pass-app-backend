@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
         // Seed sports
         $this->call(SportSeeder::class);
 
+        // Seed sport services
         $this->call(SportServiceSeeder::class);
 
         // Seed tiers
@@ -36,5 +37,8 @@ class DatabaseSeeder extends Seeder
         
         // Seed memberships (must be last as it depends on users, sports, and tiers)
         $this->call(MembershipSeeder::class);
+        
+        // Seed service purchases (depends on users, memberships, and sport services)
+        $this->call(ServicePurchaseSeeder::class);
     }
 }

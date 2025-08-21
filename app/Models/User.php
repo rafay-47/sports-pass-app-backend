@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -78,5 +79,21 @@ class User extends Authenticatable
     {
         $this->last_login = now();
         $this->save();
+    }
+
+    /**
+     * Relationship: User has many memberships.
+     */
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(Membership::class);
+    }
+
+    /**
+     * Relationship: User has many service purchases.
+     */
+    public function servicePurchases(): HasMany
+    {
+        return $this->hasMany(ServicePurchase::class);
     }
 }

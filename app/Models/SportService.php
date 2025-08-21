@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SportService extends Model
 {
@@ -79,6 +80,14 @@ class SportService extends Model
     public function sport(): BelongsTo
     {
         return $this->belongsTo(Sport::class);
+    }
+
+    /**
+     * Relationship: Sport service has many service purchases.
+     */
+    public function servicePurchases(): HasMany
+    {
+        return $this->hasMany(ServicePurchase::class);
     }
 
     /**

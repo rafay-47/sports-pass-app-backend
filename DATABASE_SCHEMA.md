@@ -445,36 +445,34 @@ CREATE TABLE trainer_sessions (\
 ```\
 \
 ### 19. Service Purchases Table\
-```sql\
-CREATE TABLE service_purchases (\
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
-    user_id UUID NOT NULL,\
-    membership_id UUID NOT NULL,\
-    service_name VARCHAR(200) NOT NULL,\
-    sport_id UUID NOT NULL,\
-    service_type VARCHAR(50) CHECK (service_type IN ('booking', 'session', 'consultation', 'rental')),\
-    amount DECIMAL(10,2) NOT NULL,\
-    description TEXT,\
-    duration_minutes INTEGER,\
-    status VARCHAR(20) DEFAULT 'completed' CHECK (status IN ('completed', 'cancelled', 'upcoming', 'expired')),\
-    service_date DATE,\
-    service_time TIME,\
-    provider VARCHAR(200),\
-    location VARCHAR(200),\
-    notes TEXT,\
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\
-    \
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,\
-    FOREIGN KEY (membership_id) REFERENCES memberships(id) ON DELETE CASCADE,\
-    FOREIGN KEY (sport_id) REFERENCES sports(id) ON DELETE RESTRICT,\
-    INDEX idx_service_purchases_user (user_id),\
-    INDEX idx_service_purchases_membership (membership_id),\
-    INDEX idx_service_purchases_sport (sport_id),\
-    INDEX idx_service_purchases_status (status),\
-    INDEX idx_service_purchases_date (service_date)\
+```sql
+CREATE TABLE service_purchases (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    membership_id UUID NOT NULL,
+    sport_service_id UUID NOT NULL, -- References sport_services(id)
+    amount DECIMAL(10,2) NOT NULL,
+    status VARCHAR(20) DEFAULT 'completed' CHECK (status IN ('completed', 'cancelled', 'upcoming', 'expired')),
+    service_date DATE,
+    service_time TIME,
+    provider VARCHAR(200),
+    location VARCHAR(200),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (membership_id) REFERENCES memberships(id) ON DELETE CASCADE,
+    FOREIGN KEY (sport_service_id) REFERENCES sport_services(id) ON DELETE RESTRICT,
+    INDEX idx_service_purchases_user (user_id),
+    INDEX idx_service_purchases_membership (membership_id),
+    INDEX idx_service_purchases_service (sport_service_id),
+    INDEX idx_service_purchases_status (status),
+    INDEX idx_service_purchases_date (service_date)
 );\
 ```\
 \
+
+
 ### 20. Payments Table\
 ```sql\
 CREATE TABLE payments (\

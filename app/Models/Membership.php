@@ -107,6 +107,14 @@ class Membership extends Model
     }
 
     /**
+     * Relationship: Membership has many service purchases.
+     */
+    public function servicePurchases(): HasMany
+    {
+        return $this->hasMany(ServicePurchase::class);
+    }
+
+    /**
      * Scope: Active memberships.
      */
     public function scopeActive($query)

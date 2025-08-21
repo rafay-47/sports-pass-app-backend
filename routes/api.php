@@ -13,6 +13,7 @@ use App\Http\Controllers\TrainerSpecialtyController;
 use App\Http\Controllers\TrainerAvailabilityController;
 use App\Http\Controllers\TrainerLocationController;
 use App\Http\Controllers\TrainerSessionController;
+use App\Http\Controllers\ServicePurchaseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -242,6 +243,9 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Member's own memberships
         Route::get('/memberships', [MembershipController::class, 'myMemberships'])->name('member.memberships');
+        
+        // Member's own service purchases
+        Route::get('/service-purchases', [ServicePurchaseController::class, 'myPurchases'])->name('member.service-purchases');
     });
 
     // Membership management routes
@@ -258,6 +262,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{membership}/pause', [MembershipController::class, 'pause'])->name('memberships.pause');
         Route::post('/{membership}/resume', [MembershipController::class, 'resume'])->name('memberships.resume');
         Route::post('/{membership}/cancel', [MembershipController::class, 'cancel'])->name('memberships.cancel');
+        
+        // Get service purchases by membership
+        Route::get('/{membership}/service-purchases', [ServicePurchaseController::class, 'getByMembership'])->name('memberships.service-purchases');
+    });
+
+    // Service Purchase management routes
+    Route::prefix('service-purchases')->group(function () {
+        Route::get('/', [ServicePurchaseController::class, 'index'])->name('service-purchases.index');
+        Route::post('/', [ServicePurchaseController::class, 'store'])->name('service-purchases.store');
+        Route::get('/{servicePurchase}', [ServicePurchaseController::class, 'show'])->name('service-purchases.show');
+        Route::put('/{servicePurchase}', [ServicePurchaseController::class, 'update'])->name('service-purchases.update');
+        Route::delete('/{servicePurchase}', [ServicePurchaseController::class, 'destroy'])->name('service-purchases.destroy');
+        
+        // Service purchase actions
+        Route::post('/{servicePurchase}/complete', [ServicePurchaseController::class, 'markCompleted'])->name('service-purchases.complete');
+        Route::post('/{servicePurchase}/cancel', [ServicePurchaseController::class, 'cancel'])->name('service-purchases.cancel');
     });
     
     // Owner-only routes (highest privilege level)
