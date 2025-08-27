@@ -280,6 +280,15 @@ class Membership extends Model
     }
 
     /**
+     * Check if this membership allows access to a specific club.
+     */
+    public function canAccessClub(string $clubId): bool
+    {
+        // Check if the membership's sport is offered by the club
+        return $this->sport->clubs()->where('clubs.id', $clubId)->exists();
+    }
+
+    /**
      * Get the route key name for model binding.
      */
     public function getRouteKeyName(): string

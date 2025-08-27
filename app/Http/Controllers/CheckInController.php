@@ -72,25 +72,35 @@ class CheckInController extends Controller
         $user = User::find($request->user_id);
         $club = Club::find($request->club_id);
 
-        // Check if user has active membership for this club
+        // Check if user has active membership for sports offered by this club
         $membership = null;
         if ($request->membership_id) {
+            // If specific membership_id provided, validate it
             $membership = Membership::where('id', $request->membership_id)
                 ->where('user_id', $request->user_id)
-                ->where('club_id', $request->club_id)
                 ->where('status', 'active')
+                ->whereHas('sport', function($query) use ($request) {
+                    $query->whereHas('clubs', function($q) use ($request) {
+                        $q->where('clubs.id', $request->club_id);
+                    });
+                })
                 ->first();
         } else {
+            // Find any active membership for sports offered by this club
             $membership = Membership::where('user_id', $request->user_id)
-                ->where('club_id', $request->club_id)
                 ->where('status', 'active')
+                ->whereHas('sport', function($query) use ($request) {
+                    $query->whereHas('clubs', function($q) use ($request) {
+                        $q->where('clubs.id', $request->club_id);
+                    });
+                })
                 ->first();
         }
 
         if (!$membership) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'User does not have an active membership for this club'
+                'message' => 'User does not have an active membership for any sport offered by this club'
             ], 422);
         }
 
