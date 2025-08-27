@@ -14,6 +14,8 @@ use App\Http\Controllers\TrainerAvailabilityController;
 use App\Http\Controllers\TrainerLocationController;
 use App\Http\Controllers\TrainerSessionController;
 use App\Http\Controllers\ServicePurchaseController;
+use App\Http\Controllers\AmenityController;
+use App\Http\Controllers\FacilityController;
 
 /*
 |--------------------------------------------------------------------------
@@ -62,6 +64,18 @@ Route::prefix('sport-services')->group(function () {
     Route::get('/{sportService}', [SportServiceController::class, 'show'])->name('sport-services.show');
 });
 
+// Public amenities (master list)
+Route::prefix('amenities')->group(function () {
+    Route::get('/', [AmenityController::class, 'index'])->name('amenities.index');
+    Route::get('/{amenity}', [AmenityController::class, 'show'])->name('amenities.show');
+});
+
+// Public facilities (master list)
+Route::prefix('facilities')->group(function () {
+    Route::get('/', [FacilityController::class, 'index'])->name('facilities.index');
+    Route::get('/{facility}', [FacilityController::class, 'show'])->name('facilities.show');
+});
+
 // Public tier routes (read-only)
 Route::prefix('tiers')->group(function () {
     Route::get('/', [TierController::class, 'index'])->name('tiers.index');
@@ -93,6 +107,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{sport}', [SportController::class, 'update'])->name('admin.sports.update');
         Route::delete('/{sport}', [SportController::class, 'destroy'])->name('admin.sports.destroy');
         Route::post('/{sport}/toggle-status', [SportController::class, 'toggleStatus'])->name('admin.sports.toggle');
+    });
+
+    // Amenities management (admin only)
+    Route::prefix('admin/amenities')->middleware('role:admin')->group(function () {
+        Route::get('/', [AmenityController::class, 'index'])->name('admin.amenities.index');
+        Route::post('/', [AmenityController::class, 'store'])->name('admin.amenities.store');
+        Route::get('/{amenity}', [AmenityController::class, 'show'])->name('admin.amenities.show');
+        Route::put('/{amenity}', [AmenityController::class, 'update'])->name('admin.amenities.update');
+        Route::delete('/{amenity}', [AmenityController::class, 'destroy'])->name('admin.amenities.destroy');
+    });
+
+    // Facilities management (admin only)
+    Route::prefix('admin/facilities')->middleware('role:admin')->group(function () {
+        Route::get('/', [FacilityController::class, 'index'])->name('admin.facilities.index');
+        Route::post('/', [FacilityController::class, 'store'])->name('admin.facilities.store');
+        Route::get('/{facility}', [FacilityController::class, 'show'])->name('admin.facilities.show');
+        Route::put('/{facility}', [FacilityController::class, 'update'])->name('admin.facilities.update');
+        Route::delete('/{facility}', [FacilityController::class, 'destroy'])->name('admin.facilities.destroy');
     });
     
     // Sport Services management routes (admin only)

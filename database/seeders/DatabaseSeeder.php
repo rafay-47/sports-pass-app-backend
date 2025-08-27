@@ -19,8 +19,14 @@ class DatabaseSeeder extends Seeder
         // Seed sport services
         $this->call(SportServiceSeeder::class);
 
-        // Seed tiers
-        $this->call(TierSeeder::class);
+    // Seed tiers
+    $this->call(TierSeeder::class);
+        
+    // Seed amenities (master list)
+    $this->call(AmenitySeeder::class);
+
+    // Seed facilities (master list)
+    $this->call(FacilitySeeder::class);
         
         // Seed test users with different roles
         $this->call(UserSeeder::class);

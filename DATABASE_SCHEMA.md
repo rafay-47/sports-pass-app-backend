@@ -8,18 +8,18 @@
 \f0\fs24 \cf0 # Sports Club Pakistan - Database Architecture\
 \
 ## Overview\
-This document outlines the complete database architecture for the Sports Club Pakistan mobile application, supporting multiple sports memberships, trainer management, facility check-ins, events, and payment processing.\
+This document outlines the complete database architecture for the Sports Club Pakistan mobile application, supporting multiple sports memberships, trainer management, club check-ins, events, and payment processing.\
 \
 ## Database Technology Recommendations\
 - **Primary Database**: PostgreSQL (for ACID compliance and complex relationships)\
 - **Cache Layer**: Redis (for session management and real-time features)\
 - **File Storage**: AWS S3 or similar (for images, documents, QR codes)\
-- **Search Engine**: Elasticsearch (for facility and trainer search)\
+- **Search Engine**: Elasticsearch (for club and trainer search)\
 \
 ## Core Tables\
 \
 ### 1. Users Table\
-```sql\
+```sql
 CREATE TABLE users (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     email VARCHAR(255) UNIQUE NOT NULL,\
@@ -48,10 +48,10 @@ CREATE TABLE users (\
 
 );\
 
-```\
+```
 \
 ### 2. Sports Table\
-```sql\
+```sql
 CREATE TABLE sports (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     name VARCHAR(100) NOT NULL,\
@@ -68,10 +68,11 @@ CREATE TABLE sports (\
     INDEX idx_sports_active (is_active),\
     INDEX idx_sports_name (name)\
 );\
-```\
+```
+
 \
 ### 3. Sport Services Table\
-```sql\
+```sql
 CREATE TABLE sport_services (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     sport_id UUID NOT NULL,\
@@ -89,10 +90,10 @@ CREATE TABLE sport_services (\
     INDEX idx_sport_services_sport (sport_id),\
     INDEX idx_sport_services_active (is_active)\
 );\
-```\
+```
 \
 ### 4. Sport Tiers Table\
-```sql\
+```sql
 CREATE TABLE tiers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     sport_id UUID NOT NULL,
@@ -119,10 +120,10 @@ CREATE TABLE tiers (
     INDEX idx_tiers_popular (is_popular),
     INDEX idx_tiers_dates (start_date, end_date)
 );\
-```\
+```
 \
 ### 5. Memberships Table\
-```sql\
+```sql
 CREATE TABLE memberships (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     membership_number VARCHAR(50) UNIQUE NOT NULL,\
@@ -153,10 +154,9 @@ CREATE TABLE memberships (\
     INDEX idx_memberships_status (status),\
     INDEX idx_memberships_expiry (expiry_date)\
 );\
-```\
-\
+```
 ### 6. Trainer Profiles Table\
-```sql\
+```sql
 CREATE TABLE trainer_profiles (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     user_id UUID UNIQUE NOT NULL,\
@@ -185,10 +185,10 @@ CREATE TABLE trainer_profiles (\
     INDEX idx_trainer_profiles_available (is_available),\
     INDEX idx_trainer_profiles_rating (rating)\
 );\
-```\
-\
-### 7. Trainer Certifications Table\
-```sql\
+```
+
+### 7. Trainer Certifications Table
+```sql
 CREATE TABLE trainer_certifications (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     trainer_profile_id UUID NOT NULL,\
@@ -204,10 +204,9 @@ CREATE TABLE trainer_certifications (\
     INDEX idx_trainer_certs_trainer (trainer_profile_id),\
     INDEX idx_trainer_certs_verified (is_verified)\
 );\
-```\
-\
-### 8. Trainer Specialties Table\
-```sql\
+```
+### 8. Trainer Specialties Table
+```sql
 CREATE TABLE trainer_specialties (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     trainer_profile_id UUID NOT NULL,\
@@ -218,10 +217,10 @@ CREATE TABLE trainer_specialties (\
     UNIQUE(trainer_profile_id, specialty),\
     INDEX idx_trainer_specialties_trainer (trainer_profile_id)\
 );\
-```\
-\
-### 9. Trainer Availability Table\
-```sql\
+```
+
+### 9. Trainer Availability Table
+```sql
 CREATE TABLE trainer_availability (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     trainer_profile_id UUID NOT NULL,\
@@ -236,10 +235,10 @@ CREATE TABLE trainer_availability (\
     INDEX idx_trainer_availability_trainer (trainer_profile_id),\
     INDEX idx_trainer_availability_day (day_of_week)\
 );\
-```\
-\
-### 10. Trainer Locations Table\
-```sql\
+```
+
+### 10. Trainer Locations Table
+```sql
 CREATE TABLE trainer_locations (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     trainer_profile_id UUID NOT NULL,\
@@ -253,88 +252,145 @@ CREATE TABLE trainer_locations (\
     INDEX idx_trainer_locations_trainer (trainer_profile_id),\
     INDEX idx_trainer_locations_coords (latitude, longitude)\
 );\
-```\
+
+
+### 11. Clubs Table
+CREATE TABLE clubs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id UUID, -- FK to users (club owner)
+    name VARCHAR(200) NOT NULL,
+    type VARCHAR(100) NOT NULL,
+    description TEXT,
+    address TEXT NOT NULL,
+    city VARCHAR(100),
+    latitude DECIMAL(10,8) NOT NULL,
+    longitude DECIMAL(11,8) NOT NULL,
+    phone VARCHAR(20),
+    email VARCHAR(255),
+    rating DECIMAL(3,2) DEFAULT 0.0,
+    price_range VARCHAR(20), -- e.g., "$$", "$$$"
+    category VARCHAR(20) CHECK (category IN ('male', 'female', 'mixed')),
+    qr_code VARCHAR(100) UNIQUE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active','pending','suspended')),
+    verification_status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (verification_status IN ('pending','verified','rejected')),
+    timings JSONB,  -- e.g. { "monday": {"open":"06:00","close":"22:00","isOpen":true}, ... }
+    pricing JSONB,  -- e.g. { "basic":1000, "standard":2000, "premium":3000 }
+    is_active BOOLEAN DEFAULT TRUE, -- kept for compatibility
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL,
+
+    INDEX idx_clubs_owner (owner_id),
+    INDEX idx_clubs_qr_code (qr_code),
+    INDEX idx_clubs_location (latitude, longitude),
+    INDEX idx_clubs_category (category),
+    INDEX idx_clubs_status (status),
+    INDEX idx_clubs_verification (verification_status),
+    INDEX idx_clubs_active (is_active),
+    INDEX idx_clubs_rating (rating)
+);
+
+### 12. Club Sports Table
+CREATE TABLE club_sports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    club_id UUID NOT NULL,
+    sport_id UUID NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,
+    FOREIGN KEY (sport_id) REFERENCES sports(id) ON DELETE CASCADE,
+    UNIQUE (club_id, sport_id),
+    INDEX idx_club_sports_club (club_id),
+    INDEX idx_club_sports_sport (sport_id)
+);
+-- ...existing code...
+
+-- Master lists (admin can CRUD these)
+CREATE TABLE amenities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(200) NOT NULL UNIQUE,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_by UUID, -- admin user id (optional)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_amenities_name (name),
+    INDEX idx_amenities_active (is_active)
+);
+
+CREATE TABLE facilities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(200) NOT NULL UNIQUE,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_by UUID, -- admin user id (optional)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_facilities_name (name),
+    INDEX idx_facilities_active (is_active)
+);
+
+-- Club -> amenity mapping (references master list)
+CREATE TABLE club_amenities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    club_id UUID NOT NULL,
+    amenity_id UUID NOT NULL,
+    custom_name VARCHAR(200), -- optional override/display name per club
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID, -- club owner/admin who added it
+    FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,
+    FOREIGN KEY (amenity_id) REFERENCES amenities(id) ON DELETE RESTRICT,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    UNIQUE (club_id, amenity_id),
+    INDEX idx_club_amenities_club (club_id),
+    INDEX idx_club_amenities_amenity (amenity_id)
+);
+
+-- Club -> facility mapping (references master list)
+CREATE TABLE club_facilities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    club_id UUID NOT NULL,
+    facility_id UUID NOT NULL,
+    custom_name VARCHAR(200), -- optional override/display name per club
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID, -- club owner/admin who added it
+    FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,
+    FOREIGN KEY (facility_id) REFERENCES facilities(id) ON DELETE RESTRICT,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    UNIQUE (club_id, facility_id),
+    INDEX idx_club_facilities_club (club_id),
+    INDEX idx_club_facilities_facility (facility_id)
+);
+
+-- ...existing code...
+### 15. Club Images Table
+CREATE TABLE club_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    club_id UUID NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    alt_text VARCHAR(200),
+    is_primary BOOLEAN DEFAULT FALSE,
+    display_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,
+    INDEX idx_club_images_club (club_id),
+    INDEX idx_club_images_primary (club_id, is_primary)
+);
+
+
+```
 \
-### 11. Facilities Table\
-```sql\
-CREATE TABLE facilities (\
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
-    name VARCHAR(200) NOT NULL,\
-    type VARCHAR(100) NOT NULL,\
-    address TEXT NOT NULL,\
-    latitude DECIMAL(10, 8) NOT NULL,\
-    longitude DECIMAL(11, 8) NOT NULL,\
-    phone VARCHAR(20),\
-    email VARCHAR(255),\
-    rating DECIMAL(3,2) DEFAULT 0.0,\
-    price_range VARCHAR(20), -- e.g., "$$", "$$$"\
-    category VARCHAR(20) CHECK (category IN ('male', 'female', 'mixed')),\
-    qr_code VARCHAR(100) UNIQUE NOT NULL,\
-    is_active BOOLEAN DEFAULT TRUE,\
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\
-    \
-    INDEX idx_facilities_qr_code (qr_code),\
-    INDEX idx_facilities_location (latitude, longitude),\
-    INDEX idx_facilities_category (category),\
-    INDEX idx_facilities_active (is_active),\
-    INDEX idx_facilities_rating (rating)\
-);\
-```\
-\
-### 12. Facility Sports Table\
-```sql\
-CREATE TABLE facility_sports (\
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
-    facility_id UUID NOT NULL,\
-    sport_id UUID NOT NULL,\
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\
-    \
-    FOREIGN KEY (facility_id) REFERENCES facilities(id) ON DELETE CASCADE,\
-    FOREIGN KEY (sport_id) REFERENCES sports(id) ON DELETE CASCADE,\
-    UNIQUE(facility_id, sport_id),\
-    INDEX idx_facility_sports_facility (facility_id),\
-    INDEX idx_facility_sports_sport (sport_id)\
-);\
-```\
-\
-### 13. Facility Amenities Table\
-```sql\
-CREATE TABLE facility_amenities (\
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
-    facility_id UUID NOT NULL,\
-    amenity_name VARCHAR(100) NOT NULL,\
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\
-    \
-    FOREIGN KEY (facility_id) REFERENCES facilities(id) ON DELETE CASCADE,\
-    INDEX idx_facility_amenities_facility (facility_id)\
-);\
-```\
-\
-### 14. Facility Images Table\
-```sql\
-CREATE TABLE facility_images (\
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
-    facility_id UUID NOT NULL,\
-    image_url VARCHAR(500) NOT NULL,\
-    alt_text VARCHAR(200),\
-    is_primary BOOLEAN DEFAULT FALSE,\
-    display_order INTEGER DEFAULT 0,\
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\
-    \
-    FOREIGN KEY (facility_id) REFERENCES facilities(id) ON DELETE CASCADE,\
-    INDEX idx_facility_images_facility (facility_id),\
-    INDEX idx_facility_images_primary (facility_id, is_primary)\
-);\
-```\
-\
-### 15. Check-ins Table\
-```sql\
+### 15. Check-ins Table
+```sql
 CREATE TABLE check_ins (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     user_id UUID NOT NULL,\
     membership_id UUID NOT NULL,\
-    facility_id UUID NOT NULL,\
+    club_id UUID NOT NULL,\
     check_in_date DATE NOT NULL,\
     check_in_time TIME NOT NULL,\
     sport_type VARCHAR(50) NOT NULL,\
@@ -345,17 +401,17 @@ CREATE TABLE check_ins (\
     \
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,\
     FOREIGN KEY (membership_id) REFERENCES memberships(id) ON DELETE CASCADE,\
-    FOREIGN KEY (facility_id) REFERENCES facilities(id) ON DELETE CASCADE,\
+    FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,\
     INDEX idx_check_ins_user (user_id),\
     INDEX idx_check_ins_membership (membership_id),\
-    INDEX idx_check_ins_facility (facility_id),\
+    INDEX idx_check_ins_clubs (club_id),\
     INDEX idx_check_ins_date (check_in_date),\
     INDEX idx_check_ins_user_date (user_id, check_in_date)\
 );\
-```\
+```
 \
-### 16. Events Table\
-```sql\
+### 16. Events Table
+```sql
 CREATE TABLE events (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     title VARCHAR(200) NOT NULL,\
@@ -387,10 +443,10 @@ CREATE TABLE events (\
     INDEX idx_events_difficulty (difficulty),\
     INDEX idx_events_active (is_active)\
 );\
-```\
+```
 \
-### 17. Event Registrations Table\
-```sql\
+### 17. Event Registrations Table
+```sql
 CREATE TABLE event_registrations (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     event_id UUID NOT NULL,\
@@ -411,10 +467,10 @@ CREATE TABLE event_registrations (\
     INDEX idx_event_registrations_user (user_id),\
     INDEX idx_event_registrations_payment_status (payment_status)\
 );\
-```\
+```
 \
-### 18. Trainer Sessions Table\
-```sql\
+### 18. Trainer Sessions Table
+```sql
 CREATE TABLE trainer_sessions (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     trainer_profile_id UUID NOT NULL,\
@@ -442,9 +498,9 @@ CREATE TABLE trainer_sessions (\
     INDEX idx_trainer_sessions_date (session_date),\
     INDEX idx_trainer_sessions_status (status)\
 );\
-```\
+```
 \
-### 19. Service Purchases Table\
+### 19. Service Purchases Table
 ```sql
 CREATE TABLE service_purchases (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -469,12 +525,12 @@ CREATE TABLE service_purchases (
     INDEX idx_service_purchases_status (status),
     INDEX idx_service_purchases_date (service_date)
 );\
-```\
+```
 \
 
 
 ### 20. Payments Table\
-```sql\
+```sql
 CREATE TABLE payments (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     user_id UUID NOT NULL,\
@@ -501,10 +557,10 @@ CREATE TABLE payments (\
     INDEX idx_payments_date (payment_date),\
     INDEX idx_payments_reference (reference_id)\
 );\
-```\
+```
 \
-### 21. Notifications Table\
-```sql\
+### 21. Notifications Table
+```sql
 CREATE TABLE notifications (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     user_id UUID NOT NULL,\
@@ -523,10 +579,10 @@ CREATE TABLE notifications (\
     INDEX idx_notifications_type (type),\
     INDEX idx_notifications_created (created_at)\
 );\
-```\
+```
 \
-### 22. User Sessions Table (for authentication)\
-```sql\
+### 22. User Sessions Table (for authentication)
+```sql
 CREATE TABLE user_sessions (\
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
     user_id UUID NOT NULL,\
@@ -543,12 +599,12 @@ CREATE TABLE user_sessions (\
     INDEX idx_user_sessions_token (session_token),\
     INDEX idx_user_sessions_expires (expires_at)\
 );\
-```\
+```
 \
 ## Views for Analytics and Reporting\
 \
 ### 1. User Statistics View\
-```sql\
+```sql
 CREATE VIEW user_statistics AS\
 SELECT \
     u.id,\
@@ -567,12 +623,12 @@ LEFT JOIN event_registrations ep ON u.id = ep.user_id\
 LEFT JOIN trainer_sessions ts ON u.id = ts.trainee_user_id AND ts.status = 'completed'\
 LEFT JOIN payments p ON u.id = p.user_id AND p.status = 'completed'\
 GROUP BY u.id, u.name, u.email, u.join_date;\
-```\
+```
 \
-### 2. Trainer Performance View\
-```sql\
-CREATE VIEW trainer_performance AS\
-SELECT \
+### 2. Trainer Performance View
+```sql
+CREATE VIEW trainer_performance AS
+SELECT 
     tp.id as trainer_id,\
     u.name as trainer_name,\
     tp.sport_id,\
@@ -587,27 +643,27 @@ FROM trainer_profiles tp\
 JOIN users u ON tp.user_id = u.id\
 LEFT JOIN trainer_sessions ts ON tp.id = ts.trainer_profile_id\
 GROUP BY tp.id, u.name, tp.sport_id, tp.rating, tp.total_sessions, tp.total_earnings;\
-```\
+```
 \
-### 3. Facility Usage View\
-```sql\
-CREATE VIEW facility_usage AS\
+### 3. club Usage View
+```sql
+CREATE VIEW club_usage AS\
 SELECT \
-    f.id as facility_id,\
-    f.name as facility_name,\
+    f.id as club_id,\
+    f.name as club_name,\
     f.category,\
     COUNT(DISTINCT ci.user_id) as unique_visitors,\
     COUNT(ci.id) as total_check_ins,\
     COUNT(CASE WHEN ci.check_in_date >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as check_ins_last_30_days,\
     AVG(f.rating) as average_rating\
-FROM facilities f\
-LEFT JOIN check_ins ci ON f.id = ci.facility_id\
+FROM clubs f\
+LEFT JOIN check_ins ci ON f.id = ci.club_id\
 GROUP BY f.id, f.name, f.category, f.rating;\
-```\
+```
 \
 ## Indexes for Performance\
 \
-```sql\
+```sql
 -- Composite indexes for common queries\
 CREATE INDEX idx_memberships_user_sport_status ON memberships(user_id, sport_id, status);\
 CREATE INDEX idx_memberships_user_tier_status ON memberships(user_id, tier_id, status);\
@@ -617,13 +673,13 @@ CREATE INDEX idx_payments_user_status_type ON payments(user_id, status, payment_
 CREATE INDEX idx_notifications_user_read_created ON notifications(user_id, is_read, created_at DESC);\
 \
 -- Full-text search indexes\
-CREATE INDEX idx_facilities_search ON facilities USING gin(to_tsvector('english', name || ' ' || coalesce(address, '')));\
+CREATE INDEX idx_clubs_search ON clubs USING gin(to_tsvector('english', name || ' ' || coalesce(address, '')));\
 CREATE INDEX idx_events_search ON events USING gin(to_tsvector('english', title || ' ' || coalesce(description, '')));\
-```\
+```
 \
 ## Constraints and Business Rules\
 \
-```sql\
+```sql
 -- Ensure trainer can only have one active profile per sport\
 ALTER TABLE trainer_profiles ADD CONSTRAINT unique_active_trainer_per_sport \
 EXCLUDE (user_id WITH =, sport_id WITH =) WHERE (is_verified = true);\
@@ -660,11 +716,11 @@ $$ LANGUAGE plpgsql;\
 CREATE TRIGGER trigger_check_monthly_checkin_limit\
     BEFORE INSERT ON check_ins\
     FOR EACH ROW EXECUTE FUNCTION check_monthly_checkin_limit();\
-```\
+```
 \
 ## Sample Data Population\
 \
-```sql\
+```sql
 -- Insert sports data\
 INSERT INTO sports (name, display_name, icon, color) VALUES\
 ('Gym', 'GYM CARD', '\uc0\u55357 \u56490 ', '#FFB948'),\
@@ -685,7 +741,7 @@ INSERT INTO sports (name, display_name, icon, color) VALUES\
 -- ('actual-uuid-here', 'Personal Trainer', 5000),\
 -- ('actual-uuid-here', 'Diet Plan', 2000),\
 -- ('actual-uuid-here', 'Expert Consultation', 1500);\
-```\
+```
 \
 ## Security Considerations\
 \
@@ -702,4 +758,4 @@ INSERT INTO sports (name, display_name, icon, color) VALUES\
 3. **Disaster Recovery**: Cross-region backup strategy\
 4. **Data Archival**: Archive old records to reduce main database size\
 \
-This database architecture supports all features of the Sports Club Pakistan app including user management, multi-sport memberships, trainer system, facility check-ins, events, payments, and comprehensive analytics.}
+This database architecture supports all features of the Sports Club Pakistan app including user management, multi-sport memberships, trainer system, clubs check-ins, events, payments, and comprehensive analytics.}
