@@ -53,10 +53,24 @@ class ClubImage extends Model
     }
 
     /**
-     * Scope to order by display order.
+     * Get the full URL for the image.
      */
-    public function scopeOrdered($query)
+    public function getImageUrlAttribute($value)
     {
-        return $query->orderBy('display_order');
+        // If the value already contains a full URL, return it
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+        
+        // Otherwise, prepend the storage URL
+        return asset('storage/' . $value);
+    }
+
+    /**
+     * Get the storage path for the image.
+     */
+    public function getImagePathAttribute()
+    {
+        return $this->attributes['image_url'];
     }
 }

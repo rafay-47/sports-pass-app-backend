@@ -96,4 +96,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(ServicePurchase::class);
     }
+
+    /**
+     * Relationship: User has many event registrations.
+     */
+    public function eventRegistrations(): HasMany
+    {
+        return $this->hasMany(EventRegistration::class);
+    }
 }
