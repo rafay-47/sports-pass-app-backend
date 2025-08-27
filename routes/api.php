@@ -16,6 +16,11 @@ use App\Http\Controllers\TrainerSessionController;
 use App\Http\Controllers\ServicePurchaseController;
 use App\Http\Controllers\AmenityController;
 use App\Http\Controllers\FacilityController;
+use App\Http\Controllers\ClubController;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventRegistrationController;
+use App\Http\Controllers\CheckInController;
+use App\Http\Controllers\ClubImageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -76,6 +81,23 @@ Route::prefix('facilities')->group(function () {
     Route::get('/{facility}', [FacilityController::class, 'show'])->name('facilities.show');
 });
 
+// Public clubs routes (read-only)
+Route::prefix('clubs')->group(function () {
+    Route::get('/', [ClubController::class, 'index'])->name('clubs.index');
+    Route::get('/search', [ClubController::class, 'search'])->name('clubs.search');
+    Route::get('/nearby', [ClubController::class, 'nearby'])->name('clubs.nearby');
+    Route::get('/filter', [ClubController::class, 'filter'])->name('clubs.filter');
+    Route::get('/{club}', [ClubController::class, 'show'])->name('clubs.show');
+    Route::get('/{club}/sports', [ClubController::class, 'getSports'])->name('clubs.sports');
+    Route::get('/{club}/amenities', [ClubController::class, 'getAmenities'])->name('clubs.amenities');
+    Route::get('/{club}/facilities', [ClubController::class, 'getFacilities'])->name('clubs.facilities');
+    Route::get('/{club}/images', [ClubController::class, 'getImages'])->name('clubs.images');
+    Route::get('/{club}/check-ins', [ClubController::class, 'getCheckIns'])->name('clubs.check-ins');
+    Route::get('/{club}/events', [ClubController::class, 'getEvents'])->name('clubs.events');
+    Route::get('/{club}/statistics', [ClubController::class, 'statistics'])->name('clubs.statistics');
+    Route::get('/{club}/qr-code', [ClubController::class, 'generateQrCode'])->name('clubs.qr-code');
+});
+
 // Public tier routes (read-only)
 Route::prefix('tiers')->group(function () {
     Route::get('/', [TierController::class, 'index'])->name('tiers.index');
@@ -127,6 +149,34 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{facility}', [FacilityController::class, 'destroy'])->name('admin.facilities.destroy');
     });
     
+    // Club management routes
+    Route::prefix('clubs')->group(function () {
+        // Club owner and admin routes
+        Route::middleware('role:owner,admin')->group(function () {
+            Route::post('/', [ClubController::class, 'store'])->name('clubs.store');
+            Route::put('/{club}', [ClubController::class, 'update'])->name('clubs.update');
+            Route::delete('/{club}', [ClubController::class, 'destroy'])->name('clubs.destroy');
+            Route::post('/{club}/toggle-status', [ClubController::class, 'toggleStatus'])->name('clubs.toggle-status');
+            Route::post('/{club}/sports', [ClubController::class, 'addSports'])->name('clubs.add-sports');
+            Route::delete('/{club}/sports/{sport}', [ClubController::class, 'removeSport'])->name('clubs.remove-sport');
+            Route::post('/{club}/amenities', [ClubController::class, 'addAmenities'])->name('clubs.add-amenities');
+            Route::delete('/{club}/amenities/{amenity}', [ClubController::class, 'removeAmenity'])->name('clubs.remove-amenity');
+            Route::post('/{club}/facilities', [ClubController::class, 'addFacilities'])->name('clubs.add-facilities');
+            Route::delete('/{club}/facilities/{facility}', [ClubController::class, 'removeFacility'])->name('clubs.remove-facility');
+            Route::post('/{club}/images', [ClubController::class, 'addImage'])->name('clubs.add-image');
+            Route::delete('/{club}/images/{image}', [ClubController::class, 'removeImage'])->name('clubs.remove-image');
+            Route::post('/{club}/check-in', [ClubController::class, 'checkIn'])->name('clubs.check-in');
+        });
+        
+        // Admin only routes
+        Route::prefix('admin')->middleware('role:admin')->group(function () {
+            Route::get('/', [ClubController::class, 'adminIndex'])->name('admin.clubs.index');
+            Route::post('/{club}/verify', [ClubController::class, 'verify'])->name('admin.clubs.verify');
+            Route::post('/{club}/unverify', [ClubController::class, 'unverify'])->name('admin.clubs.unverify');
+            Route::get('/statistics', [ClubController::class, 'adminStatistics'])->name('admin.clubs.statistics');
+        });
+    });
+    
     // Sport Services management routes (admin only)
     Route::prefix('admin/sport-services')->middleware('role:admin')->group(function () {
         Route::get('/', [SportServiceController::class, 'index'])->name('admin.sport-services.index');
@@ -145,6 +195,63 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{tier}', [TierController::class, 'update'])->name('admin.tiers.update');
         Route::delete('/{tier}', [TierController::class, 'destroy'])->name('admin.tiers.destroy');
         Route::post('/{tier}/toggle-status', [TierController::class, 'toggleStatus'])->name('admin.tiers.toggle');
+    });
+    
+    // Event management routes
+    Route::prefix('events')->group(function () {
+        Route::get('/', [EventController::class, 'index'])->name('events.index');
+        Route::post('/', [EventController::class, 'store'])->name('events.store');
+        Route::get('/statistics', [EventController::class, 'statistics'])->name('events.statistics');
+        Route::get('/sport/{sport}', [EventController::class, 'getBySport'])->name('events.by-sport');
+        Route::post('/{event}/register', [EventController::class, 'register'])->name('events.register');
+        Route::get('/my-registrations', [EventController::class, 'myRegistrations'])->name('events.my-registrations');
+        Route::get('/{event}', [EventController::class, 'show'])->name('events.show');
+        Route::put('/{event}', [EventController::class, 'update'])->name('events.update');
+        Route::delete('/{event}', [EventController::class, 'destroy'])->name('events.destroy');
+    });
+    
+    // Event Registration management routes
+    Route::prefix('event-registrations')->group(function () {
+        Route::get('/', [EventRegistrationController::class, 'index'])->name('event-registrations.index');
+        Route::post('/', [EventRegistrationController::class, 'store'])->name('event-registrations.store');
+        Route::get('/statistics', [EventRegistrationController::class, 'statistics'])->name('event-registrations.statistics');
+        Route::get('/event/{event}', [EventRegistrationController::class, 'getByEvent'])->name('event-registrations.by-event');
+        Route::get('/user/{user}', [EventRegistrationController::class, 'getByUser'])->name('event-registrations.by-user');
+        Route::post('/{eventRegistration}/cancel', [EventRegistrationController::class, 'cancel'])->name('event-registrations.cancel');
+        Route::post('/{eventRegistration}/confirm', [EventRegistrationController::class, 'confirm'])->name('event-registrations.confirm');
+        Route::post('/{eventRegistration}/process-payment', [EventRegistrationController::class, 'processPayment'])->name('event-registrations.process-payment');
+        Route::get('/{eventRegistration}', [EventRegistrationController::class, 'show'])->name('event-registrations.show');
+        Route::put('/{eventRegistration}', [EventRegistrationController::class, 'update'])->name('event-registrations.update');
+        Route::delete('/{eventRegistration}', [EventRegistrationController::class, 'destroy'])->name('event-registrations.destroy');
+    });
+    
+    // Check-in management routes
+    Route::prefix('check-ins')->group(function () {
+        Route::get('/', [CheckInController::class, 'index'])->name('check-ins.index');
+        Route::post('/', [CheckInController::class, 'store'])->name('check-ins.store');
+        Route::get('/statistics', [CheckInController::class, 'statistics'])->name('check-ins.statistics');
+        Route::get('/current', [CheckInController::class, 'currentCheckIns'])->name('check-ins.current');
+        Route::post('/qr-check-in', [CheckInController::class, 'qrCheckIn'])->name('check-ins.qr-check-in');
+        Route::get('/club/{club}', [CheckInController::class, 'getByClub'])->name('check-ins.by-club');
+        Route::get('/user/{user}', [CheckInController::class, 'getByUser'])->name('check-ins.by-user');
+        Route::post('/{checkIn}/check-out', [CheckInController::class, 'checkOut'])->name('check-ins.check-out');
+        Route::get('/{checkIn}', [CheckInController::class, 'show'])->name('check-ins.show');
+        Route::put('/{checkIn}', [CheckInController::class, 'update'])->name('check-ins.update');
+        Route::delete('/{checkIn}', [CheckInController::class, 'destroy'])->name('check-ins.destroy');
+    });
+    
+    // Club Image management routes
+    Route::prefix('club-images')->group(function () {
+        Route::get('/', [ClubImageController::class, 'index'])->name('club-images.index');
+        Route::post('/', [ClubImageController::class, 'store'])->name('club-images.store');
+        Route::post('/bulk-upload', [ClubImageController::class, 'bulkUpload'])->name('club-images.bulk-upload');
+        Route::get('/statistics', [ClubImageController::class, 'statistics'])->name('club-images.statistics');
+        Route::get('/club/{club}', [ClubImageController::class, 'getByClub'])->name('club-images.by-club');
+        Route::post('/{clubImage}/set-primary', [ClubImageController::class, 'setPrimary'])->name('club-images.set-primary');
+        Route::post('/update-sort-order', [ClubImageController::class, 'updateSortOrder'])->name('club-images.update-sort-order');
+        Route::get('/{clubImage}', [ClubImageController::class, 'show'])->name('club-images.show');
+        Route::put('/{clubImage}', [ClubImageController::class, 'update'])->name('club-images.update');
+        Route::delete('/{clubImage}', [ClubImageController::class, 'destroy'])->name('club-images.destroy');
     });
     
     // Trainer-specific routes (trainers, admins, and owners can access)

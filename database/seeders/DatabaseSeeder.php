@@ -31,6 +31,12 @@ class DatabaseSeeder extends Seeder
         // Seed test users with different roles
         $this->call(UserSeeder::class);
         
+        // Seed clubs (depends on users, sports, amenities, and facilities)
+        $this->call(ClubSeeder::class);
+        
+        // Seed events (depends on sports)
+        $this->call(EventSeeder::class);
+        
         // Seed trainer profiles (depends on users, sports, and tiers)
         $this->call(TrainerProfileSeeder::class);
         

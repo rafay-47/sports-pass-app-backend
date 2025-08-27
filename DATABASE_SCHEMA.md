@@ -253,8 +253,9 @@ CREATE TABLE trainer_locations (\
     INDEX idx_trainer_locations_coords (latitude, longitude)\
 );\
 
-
+```
 ### 11. Clubs Table
+```sql
 CREATE TABLE clubs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id UUID, -- FK to users (club owner)
@@ -291,7 +292,9 @@ CREATE TABLE clubs (
     INDEX idx_clubs_rating (rating)
 );
 
+```
 ### 12. Club Sports Table
+```sql
 CREATE TABLE club_sports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     club_id UUID NOT NULL,
@@ -304,7 +307,6 @@ CREATE TABLE club_sports (
     INDEX idx_club_sports_club (club_id),
     INDEX idx_club_sports_sport (sport_id)
 );
--- ...existing code...
 
 -- Master lists (admin can CRUD these)
 CREATE TABLE amenities (
@@ -320,6 +322,8 @@ CREATE TABLE amenities (
     INDEX idx_amenities_active (is_active)
 );
 
+```
+```sql
 CREATE TABLE facilities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(200) NOT NULL UNIQUE,
@@ -334,6 +338,7 @@ CREATE TABLE facilities (
 );
 
 -- Club -> amenity mapping (references master list)
+
 CREATE TABLE club_amenities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     club_id UUID NOT NULL,
@@ -364,9 +369,9 @@ CREATE TABLE club_facilities (
     INDEX idx_club_facilities_club (club_id),
     INDEX idx_club_facilities_facility (facility_id)
 );
-
--- ...existing code...
+```
 ### 15. Club Images Table
+```sql
 CREATE TABLE club_images (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     club_id UUID NOT NULL,
