@@ -460,9 +460,8 @@ class ClubController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'amenities' => 'required|array',
-            'amenities.*.amenity_id' => 'required|uuid|exists:amenities,id',
-            'amenities.*.custom_name' => 'nullable|string|max:200'
+            'amenity_ids' => 'required|array',
+            'amenity_ids.*' => 'uuid|exists:amenities,id'
         ]);
 
         if ($validator->fails()) {
@@ -474,15 +473,7 @@ class ClubController extends Controller
         }
 
         try {
-            $amenitiesData = [];
-            foreach ($request->amenities as $amenity) {
-                $amenitiesData[$amenity['amenity_id']] = [
-                    'custom_name' => $amenity['custom_name'] ?? null,
-                    'created_by' => $request->user()->id
-                ];
-            }
-
-            $club->amenities()->syncWithoutDetaching($amenitiesData);
+            $club->amenities()->syncWithoutDetaching($request->amenity_ids);
 
             return response()->json([
                 'status' => 'success',
@@ -559,9 +550,8 @@ class ClubController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'facilities' => 'required|array',
-            'facilities.*.facility_id' => 'required|uuid|exists:facilities,id',
-            'facilities.*.custom_name' => 'nullable|string|max:200'
+            'facility_ids' => 'required|array',
+            'facility_ids.*' => 'uuid|exists:facilities,id'
         ]);
 
         if ($validator->fails()) {
@@ -573,15 +563,7 @@ class ClubController extends Controller
         }
 
         try {
-            $facilitiesData = [];
-            foreach ($request->facilities as $facility) {
-                $facilitiesData[$facility['facility_id']] = [
-                    'custom_name' => $facility['custom_name'] ?? null,
-                    'created_by' => $request->user()->id
-                ];
-            }
-
-            $club->facilities()->syncWithoutDetaching($facilitiesData);
+            $club->facilities()->syncWithoutDetaching($request->facility_ids);
 
             return response()->json([
                 'status' => 'success',
@@ -1472,14 +1454,19 @@ class ClubController extends Controller
     public function getCheckIns(Request $request, Club $club): JsonResponse
     {
         // Check if user is owner or admin
-        if ($request->user()->id !== $club->owner_id && $request->user()->user_role !== 'admin') {
+        if ($request->user() && ($request->user()->id !== $club->owner_id && $request->user()->user_role !== 'admin')) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'You can only view check-ins for your own clubs'
             ], 403);
         }
 
-        $query = $club->checkIns()->with(['user', 'membership']);
+        $query = $club->checkIns()
+            ->with([
+                'user:id,name,email',
+                'membership:id,status,tier_id',
+                'membership.tier:id,tier_name,display_name'
+            ]);
 
         // Filter by date range
         if ($request->filled(['start_date', 'end_date'])) {
@@ -1499,6 +1486,37 @@ class ClubController extends Controller
         }
 
         $checkIns = $query->orderBy('check_in_time', 'desc')->paginate(15);
+
+        // Transform the data to handle null relationships safely
+        $transformedCheckIns = $checkIns->getCollection()->map(function ($checkIn) {
+            return [
+                'id' => $checkIn->id,
+                'user_id' => $checkIn->user_id,
+                'club_id' => $checkIn->club_id,
+                'membership_id' => $checkIn->membership_id,
+                'check_in_date' => $checkIn->check_in_date,
+                'check_in_time' => $checkIn->check_in_time,
+                'check_out_time' => $checkIn->check_out_time,
+                'sport_type' => $checkIn->sport_type,
+                'qr_code_used' => $checkIn->qr_code_used,
+                'duration_minutes' => $checkIn->duration_minutes,
+                'notes' => $checkIn->notes,
+                'created_at' => $checkIn->created_at,
+                'updated_at' => $checkIn->updated_at,
+                'user' => $checkIn->user ? [
+                    'id' => $checkIn->user->id,
+                    'name' => $checkIn->user->name,
+                    'email' => $checkIn->user->email,
+                ] : null,
+                'membership' => $checkIn->membership ? [
+                    'id' => $checkIn->membership->id,
+                    'membership_type' => $checkIn->membership->tier ? $checkIn->membership->tier->display_name : null,
+                    'status' => $checkIn->membership->status,
+                ] : null,
+            ];
+        });
+
+        $checkIns->setCollection($transformedCheckIns);
 
         return response()->json([
             'status' => 'success',
