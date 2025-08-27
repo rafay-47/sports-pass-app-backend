@@ -281,6 +281,39 @@ class ClubController extends Controller
     }
 
     /**
+     * Toggle club active status (owner or admin only).
+     */
+    public function toggleStatus(Request $request, Club $club): JsonResponse
+    {
+        // Check if user is owner or admin
+        if ($request->user()->id !== $club->owner_id && $request->user()->user_role !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You can only toggle status for your own clubs'
+            ], 403);
+        }
+
+        try {
+            $club->update(['is_active' => !$club->is_active]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Club status updated successfully',
+                'data' => [
+                    'club' => $club->fresh()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to toggle club status',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Update club verification status (admin only).
      */
     public function updateVerificationStatus(Request $request, Club $club): JsonResponse
@@ -1236,8 +1269,8 @@ class ClubController extends Controller
      */
     public function getImages(Club $club): JsonResponse
     {
-        $images = $club->images()
-            ->orderBy('sort_order')
+        $images = ClubImage::where('club_id', $club->id)
+            ->orderBy('display_order')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -1286,13 +1319,13 @@ class ClubController extends Controller
             }
 
             // Get next sort order
-            $nextSortOrder = $club->images()->max('sort_order') + 1;
+            $nextSortOrder = $club->images()->max('display_order') + 1;
 
             $image = $club->images()->create([
-                'image_path' => $imagePath,
+                'image_url' => $imagePath,
                 'alt_text' => $request->alt_text,
                 'is_primary' => $request->boolean('is_primary', false),
-                'sort_order' => $nextSortOrder
+                'display_order' => $nextSortOrder
             ]);
 
             return response()->json([
@@ -1333,8 +1366,8 @@ class ClubController extends Controller
 
         try {
             // Delete the image file
-            if (file_exists(storage_path('app/public/' . $clubImage->image_path))) {
-                unlink(storage_path('app/public/' . $clubImage->image_path));
+            if (file_exists(storage_path('app/public/' . $clubImage->image_url))) {
+                unlink(storage_path('app/public/' . $clubImage->image_url));
             }
 
             $clubImage->delete();

@@ -35,7 +35,7 @@ class ClubImageController extends Controller
             $query->where('is_primary', $request->boolean('is_primary'));
         }
 
-        $images = $query->orderBy('sort_order')->paginate(15);
+        $images = $query->orderBy('display_order')->paginate(15);
 
         return response()->json([
             'status' => 'success',
@@ -73,15 +73,10 @@ class ClubImageController extends Controller
 
         $image = ClubImage::create([
             'club_id' => $request->club_id,
-            'image_path' => $path,
-            'image_name' => $filename,
-            'type' => $request->type ?? 'gallery',
-            'caption' => $request->caption,
+            'image_url' => $path,
             'alt_text' => $request->alt_text,
             'is_primary' => $request->boolean('is_primary'),
-            'sort_order' => $request->sort_order ?? 0,
-            'file_size' => $file->getSize(),
-            'mime_type' => $file->getMimeType(),
+            'display_order' => $request->sort_order ?? 0,
         ]);
 
         return response()->json([
@@ -131,8 +126,8 @@ class ClubImageController extends Controller
     public function destroy(ClubImage $clubImage)
     {
         // Delete the file from storage
-        if (Storage::disk('public')->exists($clubImage->image_path)) {
-            Storage::disk('public')->delete($clubImage->image_path);
+        if (Storage::disk('public')->exists($clubImage->image_url)) {
+            Storage::disk('public')->delete($clubImage->image_url);
         }
 
         $clubImage->delete();
@@ -160,7 +155,7 @@ class ClubImageController extends Controller
             $query->where('is_primary', true);
         }
 
-        $images = $query->orderBy('sort_order')->get();
+        $images = $query->orderBy('display_order')->get();
 
         return response()->json([
             'status' => 'success',
@@ -209,7 +204,7 @@ class ClubImageController extends Controller
 
         foreach ($request->images as $imageData) {
             ClubImage::where('id', $imageData['id'])
-                ->update(['sort_order' => $imageData['sort_order']]);
+                ->update(['display_order' => $imageData['sort_order']]);
         }
 
         return response()->json([
@@ -248,11 +243,10 @@ class ClubImageController extends Controller
             if ($path) {
                 $image = ClubImage::create([
                     'club_id' => $request->club_id,
-                    'image_path' => $path,
-                    'image_name' => $filename,
-                    'type' => $request->type ?? 'gallery',
-                    'file_size' => $file->getSize(),
-                    'mime_type' => $file->getMimeType(),
+                    'image_url' => $path,
+                    'alt_text' => $request->alt_text,
+                    'is_primary' => false,
+                    'display_order' => 0,
                 ]);
 
                 $uploadedImages[] = $image;
