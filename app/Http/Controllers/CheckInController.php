@@ -79,6 +79,7 @@ class CheckInController extends Controller
             $membership = Membership::where('id', $request->membership_id)
                 ->where('user_id', $request->user_id)
                 ->where('status', 'active')
+                ->where('expiry_date', '>=', now())
                 ->whereHas('sport', function($query) use ($request) {
                     $query->whereHas('clubs', function($q) use ($request) {
                         $q->where('clubs.id', $request->club_id);
@@ -89,6 +90,7 @@ class CheckInController extends Controller
             // Find any active membership for sports offered by this club
             $membership = Membership::where('user_id', $request->user_id)
                 ->where('status', 'active')
+                ->where('expiry_date', '>=', now())
                 ->whereHas('sport', function($query) use ($request) {
                     $query->whereHas('clubs', function($q) use ($request) {
                         $q->where('clubs.id', $request->club_id);
@@ -118,7 +120,7 @@ class CheckInController extends Controller
         }
 
         // Check membership validity
-        if ($membership->end_date && now()->isAfter($membership->end_date)) {
+        if ($membership->expiry_date && now()->isAfter($membership->expiry_date)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Membership has expired'
@@ -297,7 +299,6 @@ class CheckInController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'qr_code' => 'required|string',
-            'club_id' => 'required|uuid|exists:clubs,id',
         ]);
 
         if ($validator->fails()) {
@@ -308,31 +309,39 @@ class CheckInController extends Controller
             ], 422);
         }
 
-        // Decode QR code to get user information
-        // This is a simplified implementation - in reality you'd decode the QR
-        $qrData = json_decode(base64_decode($request->qr_code), true);
-
-        if (!$qrData || !isset($qrData['user_id'])) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Invalid QR code'
-            ], 422);
-        }
-
-        $user = User::find($qrData['user_id']);
-
+        // Get authenticated user
+        $user = $request->user();
         if (!$user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'User not found'
+                'message' => 'Authentication required'
+            ], 401);
+        }
+
+        // Find club by QR code
+        $club = Club::findByQrCode($request->qr_code);
+
+        if (!$club) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid QR code or club not found'
             ], 404);
+        }
+
+        // Check if club is active
+        if (!$club->is_active || $club->status !== 'active') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Club is not available for check-in'
+            ], 422);
         }
 
         // Create check-in request data
         $checkInData = [
-            'club_id' => $request->club_id,
+            'club_id' => $club->id,
             'user_id' => $user->id,
             'check_in_method' => 'qr_code',
+            'qr_code_used' => $request->qr_code,
         ];
 
         // Use the store method to create the check-in

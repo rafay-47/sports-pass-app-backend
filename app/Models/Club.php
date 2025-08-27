@@ -225,6 +225,22 @@ class Club extends Model
     }
 
     /**
+     * Scope to find club by QR code.
+     */
+    public function scopeByQrCode($query, $qrCode)
+    {
+        return $query->where('qr_code', $qrCode);
+    }
+
+    /**
+     * Find club by QR code.
+     */
+    public static function findByQrCode(string $qrCode): ?self
+    {
+        return self::byQrCode($qrCode)->first();
+    }
+
+    /**
      * Update club rating based on check-ins or reviews.
      */
     public function updateRating(): void

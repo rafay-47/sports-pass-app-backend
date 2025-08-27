@@ -1392,6 +1392,7 @@ class ClubController extends Controller
             $membership = $request->user()->memberships()
                 ->where('id', $request->membership_id)
                 ->where('status', 'active')
+                ->where('expiry_date', '>=', now())
                 ->first();
 
             if (!$membership) {
