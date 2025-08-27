@@ -104,4 +104,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(EventRegistration::class);
     }
+
+    /**
+     * Relationship: User has many check-ins.
+     */
+    public function checkIns(): HasMany
+    {
+        return $this->hasMany(CheckIn::class);
+    }
 }
