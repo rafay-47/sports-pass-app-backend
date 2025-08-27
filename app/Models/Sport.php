@@ -94,6 +94,14 @@ class Sport extends Model
     }
 
     /**
+     * Get the events for the sport.
+     */
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class);
+    }
+
+    /**
      * Get tiers available on a specific date (more efficient for eager loading).
      */
     public function availableOnDate($date = null): HasMany
