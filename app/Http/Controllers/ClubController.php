@@ -1375,7 +1375,6 @@ class ClubController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'membership_id' => 'required|uuid|exists:memberships,id',
-            'check_in_method' => 'nullable|in:manual,qr_code,mobile_app',
             'notes' => 'nullable|string|max:500'
         ]);
 
@@ -1410,25 +1409,12 @@ class ClubController extends Controller
                 ], 403);
             }
 
-            // Check if already checked in and not checked out
-            $existingCheckIn = CheckIn::where('user_id', $request->user()->id)
-                ->where('club_id', $club->id)
-                ->whereNull('check_out_time')
-                ->first();
-
-            if ($existingCheckIn) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'You are already checked in to this club'
-                ], 422);
-            }
-
             $checkIn = CheckIn::create([
                 'user_id' => $request->user()->id,
                 'club_id' => $club->id,
                 'membership_id' => $request->membership_id,
+                'check_in_date' => today(),
                 'check_in_time' => now(),
-                'check_in_method' => $request->get('check_in_method', 'mobile_app'),
                 'notes' => $request->notes
             ]);
 
@@ -1477,15 +1463,6 @@ class ClubController extends Controller
             ]);
         }
 
-        // Filter by status
-        if ($request->filled('status')) {
-            if ($request->status === 'active') {
-                $query->whereNull('check_out_time');
-            } elseif ($request->status === 'completed') {
-                $query->whereNotNull('check_out_time');
-            }
-        }
-
         $checkIns = $query->orderBy('check_in_time', 'desc')->paginate(15);
 
         // Transform the data to handle null relationships safely
@@ -1497,10 +1474,7 @@ class ClubController extends Controller
                 'membership_id' => $checkIn->membership_id,
                 'check_in_date' => $checkIn->check_in_date,
                 'check_in_time' => $checkIn->check_in_time,
-                'check_out_time' => $checkIn->check_out_time,
-                'sport_type' => $checkIn->sport_type,
                 'qr_code_used' => $checkIn->qr_code_used,
-                'duration_minutes' => $checkIn->duration_minutes,
                 'notes' => $checkIn->notes,
                 'created_at' => $checkIn->created_at,
                 'updated_at' => $checkIn->updated_at,

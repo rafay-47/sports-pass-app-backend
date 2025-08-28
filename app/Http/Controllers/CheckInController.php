@@ -10,8 +10,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
-use App\Http\Requests\StoreCheckInRequest;
-use App\Http\Requests\UpdateCheckInRequest;
 
 class CheckInController extends Controller
 {
@@ -47,15 +45,6 @@ class CheckInController extends Controller
             $query->whereDate('check_in_time', today());
         }
 
-        // Filter by check-out status
-        if ($request->has('checked_out')) {
-            if ($request->checked_out) {
-                $query->whereNotNull('check_out_time');
-            } else {
-                $query->whereNull('check_out_time');
-            }
-        }
-
         $checkIns = $query->orderBy('check_in_time', 'desc')->paginate(15);
 
         return response()->json([
@@ -67,8 +56,24 @@ class CheckInController extends Controller
     /**
      * Store a newly created check-in.
      */
-    public function store(StoreCheckInRequest $request)
+    public function store(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'club_id' => 'required|uuid|exists:clubs,id',
+            'user_id' => 'required|uuid|exists:users,id',
+            'membership_id' => 'nullable|uuid|exists:memberships,id',
+            'notes' => 'nullable|string|max:500',
+            'qr_code_used' => 'nullable|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
         $user = User::find($request->user_id);
         $club = Club::find($request->club_id);
 
@@ -106,19 +111,6 @@ class CheckInController extends Controller
             ], 422);
         }
 
-        // Check if user is already checked in and hasn't checked out
-        $existingCheckIn = CheckIn::where('user_id', $request->user_id)
-            ->where('club_id', $request->club_id)
-            ->whereNull('check_out_time')
-            ->first();
-
-        if ($existingCheckIn) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'User is already checked in to this club'
-            ], 422);
-        }
-
         // Check membership validity
         if ($membership->expiry_date && now()->isAfter($membership->expiry_date)) {
             return response()->json([
@@ -131,10 +123,10 @@ class CheckInController extends Controller
             'club_id' => $request->club_id,
             'user_id' => $request->user_id,
             'membership_id' => $membership->id,
+            'check_in_date' => today(),
             'check_in_time' => now(),
-            'check_in_method' => $request->check_in_method ?? 'manual',
-            'location' => $request->location,
             'notes' => $request->notes,
+            'qr_code_used' => $request->qr_code_used,
         ]);
 
         return response()->json([
@@ -160,9 +152,21 @@ class CheckInController extends Controller
     /**
      * Update the specified check-in.
      */
-    public function update(UpdateCheckInRequest $request, CheckIn $checkIn)
+    public function update(Request $request, CheckIn $checkIn)
     {
-        $checkIn->update($request->validated());
+        $validator = Validator::make($request->all(), [
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $checkIn->update($request->only(['notes']));
 
         return response()->json([
             'status' => 'success',
@@ -185,44 +189,6 @@ class CheckInController extends Controller
     }
 
     /**
-     * Check out a user from a club.
-     */
-    public function checkOut(Request $request, CheckIn $checkIn)
-    {
-        if ($checkIn->check_out_time) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'User is already checked out'
-            ], 422);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'location' => 'nullable|string|max:255',
-            'notes' => 'nullable|string|max:500',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $checkIn->update([
-            'check_out_time' => now(),
-            'location' => $request->location ?? $checkIn->location,
-            'notes' => $request->notes ?? $checkIn->notes,
-        ]);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Check-out successful',
-            'data' => $checkIn->load(['user', 'club', 'membership'])
-        ]);
-    }
-
-    /**
      * Get check-ins for a specific club.
      */
     public function getByClub(Club $club, Request $request)
@@ -232,15 +198,6 @@ class CheckInController extends Controller
         // Filter by date
         if ($request->has('date')) {
             $query->whereDate('check_in_time', $request->date);
-        }
-
-        // Filter by checked out status
-        if ($request->has('checked_out')) {
-            if ($request->checked_out) {
-                $query->whereNotNull('check_out_time');
-            } else {
-                $query->whereNull('check_out_time');
-            }
         }
 
         $checkIns = $query->orderBy('check_in_time', 'desc')->paginate(15);
@@ -272,12 +229,11 @@ class CheckInController extends Controller
     }
 
     /**
-     * Get current check-ins (users who haven't checked out).
+     * Get all check-ins.
      */
     public function currentCheckIns(Request $request)
     {
-        $query = CheckIn::with(['user', 'club', 'membership'])
-            ->whereNull('check_out_time');
+        $query = CheckIn::with(['user', 'club', 'membership']);
 
         // Filter by club
         if ($request->has('club_id')) {
@@ -317,7 +273,7 @@ class CheckInController extends Controller
                 'message' => 'Authentication required'
             ], 401);
         }
-
+        
         // Find club by QR code
         $club = Club::findByQrCode($request->qr_code);
 
@@ -327,6 +283,7 @@ class CheckInController extends Controller
                 'message' => 'Invalid QR code or club not found'
             ], 404);
         }
+
 
         // Check if club is active
         if (!$club->is_active || $club->status !== 'active') {
@@ -340,7 +297,6 @@ class CheckInController extends Controller
         $checkInData = [
             'club_id' => $club->id,
             'user_id' => $user->id,
-            'check_in_method' => 'qr_code',
             'qr_code_used' => $request->qr_code,
         ];
 
@@ -370,9 +326,6 @@ class CheckInController extends Controller
         $stats = [
             'total_check_ins' => (clone $query)->count(),
             'unique_users' => (clone $query)->distinct('user_id')->count('user_id'),
-            'average_session_duration' => (clone $query)->whereNotNull('check_out_time')
-                ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, check_in_time, check_out_time)) as avg_duration')
-                ->first()->avg_duration ?? 0,
             'check_ins_by_club' => (clone $query)->selectRaw('club_id, COUNT(*) as count')
                 ->groupBy('club_id')
                 ->with('club')

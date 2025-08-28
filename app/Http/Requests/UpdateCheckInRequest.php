@@ -20,8 +20,6 @@ class UpdateCheckInRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'check_out_time' => 'nullable|date|after:check_in_time',
-            'location' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:500',
         ];
     }
@@ -32,8 +30,6 @@ class UpdateCheckInRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'check_out_time.after' => 'Check-out time must be after check-in time',
-            'location.max' => 'Location cannot exceed 255 characters',
             'notes.max' => 'Notes cannot exceed 500 characters',
         ];
     }
