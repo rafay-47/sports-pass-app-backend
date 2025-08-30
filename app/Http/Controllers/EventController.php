@@ -58,11 +58,13 @@ class EventController extends Controller
             });
         }
 
-        $events = $query->paginate(15);
+        $events = $query->get();
 
         return response()->json([
             'status' => 'success',
-            'data' => $events
+            'data' => [
+                'events' => $events
+            ]
         ]);
     }
 

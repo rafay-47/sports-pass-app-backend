@@ -45,11 +45,13 @@ class CheckInController extends Controller
             $query->whereDate('check_in_time', today());
         }
 
-        $checkIns = $query->orderBy('check_in_time', 'desc')->paginate(15);
+        $checkIns = $query->orderBy('check_in_time', 'desc')->get();
 
         return response()->json([
             'status' => 'success',
-            'data' => $checkIns
+            'data' => [
+                'check_ins' => $checkIns
+            ]
         ]);
     }
 

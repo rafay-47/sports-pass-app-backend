@@ -45,11 +45,13 @@ class EventRegistrationController extends Controller
             $query->whereBetween('registration_date', [$request->start_date, $request->end_date]);
         }
 
-        $registrations = $query->paginate(15);
+        $registrations = $query->get();
 
         return response()->json([
             'status' => 'success',
-            'data' => $registrations
+            'data' => [
+                'registrations' => $registrations
+            ]
         ]);
     }
 

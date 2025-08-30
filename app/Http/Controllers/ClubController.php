@@ -78,8 +78,7 @@ class ClubController extends Controller
         }
 
         // Pagination
-        $perPage = $request->get('per_page', 15);
-        $clubs = $query->paginate($perPage);
+        $clubs = $query->get();
 
         return response()->json([
             'status' => 'success',

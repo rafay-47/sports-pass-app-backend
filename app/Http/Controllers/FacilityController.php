@@ -22,8 +22,7 @@ class FacilityController extends Controller
             $query->where('name', 'ILIKE', "%{$search}%");
         }
 
-        $perPage = $request->get('per_page', 15);
-        $facilities = $query->orderBy('name')->paginate($perPage);
+        $facilities = $query->orderBy('name')->get();
 
         return response()->json(['status' => 'success', 'data' => ['facilities' => $facilities]]);
     }

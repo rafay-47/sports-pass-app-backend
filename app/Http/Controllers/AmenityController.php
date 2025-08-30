@@ -25,8 +25,7 @@ class AmenityController extends Controller
             $query->where('name', 'ILIKE', "%{$search}%");
         }
 
-        $perPage = $request->get('per_page', 15);
-        $amenities = $query->orderBy('name')->paginate($perPage);
+        $amenities = $query->orderBy('name')->get();
 
         return response()->json([
             'status' => 'success',
