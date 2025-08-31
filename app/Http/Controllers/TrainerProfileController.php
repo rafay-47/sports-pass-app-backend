@@ -6,6 +6,7 @@ use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Models\Sport;
 use App\Models\Tier;
+use App\Models\TrainerCertification;
 use App\Http\Requests\StoreTrainerProfileRequest;
 use App\Http\Requests\UpdateTrainerProfileRequest;
 use Illuminate\Http\Request;
@@ -93,11 +94,6 @@ class TrainerProfileController extends Controller
             $query->byExperience($request->min_experience, $request->max_experience);
         }
 
-        // Filter by hourly rate range
-        if ($request->filled('min_rate') || $request->filled('max_rate')) {
-            $query->byHourlyRate($request->min_rate, $request->max_rate);
-        }
-
         // Filter by gender preference
         if ($request->filled('gender_preference')) {
             $query->byGenderPreference($request->gender_preference);
@@ -170,7 +166,6 @@ class TrainerProfileController extends Controller
                 'tier_id' => $request->tier_id,
                 'experience_years' => $request->experience_years,
                 'bio' => $request->bio,
-                'hourly_rate' => $request->hourly_rate,
                 'rating' => 0.0,
                 'total_sessions' => 0,
                 'total_earnings' => 0,
@@ -181,6 +176,22 @@ class TrainerProfileController extends Controller
             ];
 
             $trainerProfile = TrainerProfile::create($trainerData);
+
+            // Create certifications if provided
+            if ($request->has('certifications') && is_array($request->certifications)) {
+                foreach ($request->certifications as $certificationData) {
+                    TrainerCertification::create([
+                        'trainer_profile_id' => $trainerProfile->id,
+                        'certification_name' => $certificationData['certification_name'],
+                        'issuing_organization' => $certificationData['issuing_organization'] ?? null,
+                        'issue_date' => $certificationData['issue_date'] ?? null,
+                        'expiry_date' => $certificationData['expiry_date'] ?? null,
+                        'certificate_url' => $certificationData['certificate_url'] ?? null,
+                        'is_verified' => $certificationData['is_verified'] ?? false,
+                    ]);
+                }
+            }
+
             $trainerProfile->load([
                 'user:id,name,email,phone,gender',
                 'sport:id,name,display_name,icon,color',
@@ -487,11 +498,6 @@ class TrainerProfileController extends Controller
             $query->byExperience($request->min_experience, $request->max_experience);
         }
 
-        // Filter by hourly rate range
-        if ($request->filled('min_rate') || $request->filled('max_rate')) {
-            $query->byHourlyRate($request->min_rate, $request->max_rate);
-        }
-
         // Filter by gender preference
         if ($request->filled('gender_preference')) {
             $query->byGenderPreference($request->gender_preference);
@@ -564,7 +570,6 @@ class TrainerProfileController extends Controller
             'average_rating' => round($query->where('rating', '>', 0)->avg('rating') ?? 0, 2),
             'total_sessions' => $query->sum('total_sessions'),
             'total_earnings' => $query->sum('total_earnings'),
-            'average_hourly_rate' => round($query->whereNotNull('hourly_rate')->avg('hourly_rate') ?? 0, 2),
         ];
 
         // Sports breakdown

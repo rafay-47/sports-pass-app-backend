@@ -76,9 +76,15 @@ class StoreTrainerProfileRequest extends FormRequest
             ],
             'experience_years' => 'required|integer|min:0|max:50',
             'bio' => 'nullable|string|max:1000',
-            'hourly_rate' => 'nullable|numeric|min:0|max:99999.99',
             'gender_preference' => 'nullable|in:male,female,both',
             'is_available' => 'boolean',
+            'certifications' => 'nullable|array',
+            'certifications.*.certification_name' => 'required|string|max:200',
+            'certifications.*.issuing_organization' => 'nullable|string|max:200',
+            'certifications.*.issue_date' => 'nullable|date|before_or_equal:today',
+            'certifications.*.expiry_date' => 'nullable|date|after:certifications.*.issue_date',
+            'certifications.*.certificate_url' => 'nullable|url|max:500',
+            'certifications.*.is_verified' => 'boolean',
         ];
     }
 
@@ -92,9 +98,15 @@ class StoreTrainerProfileRequest extends FormRequest
             'sport_id' => 'sport',
             'tier_id' => 'tier',
             'experience_years' => 'years of experience',
-            'hourly_rate' => 'hourly rate',
             'gender_preference' => 'gender preference',
             'is_available' => 'availability status',
+            'certifications' => 'certifications',
+            'certifications.*.certification_name' => 'certification name',
+            'certifications.*.issuing_organization' => 'issuing organization',
+            'certifications.*.issue_date' => 'issue date',
+            'certifications.*.expiry_date' => 'expiry date',
+            'certifications.*.certificate_url' => 'certificate URL',
+            'certifications.*.is_verified' => 'verification status',
         ];
     }
 

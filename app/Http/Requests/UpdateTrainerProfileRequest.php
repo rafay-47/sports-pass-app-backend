@@ -75,7 +75,6 @@ class UpdateTrainerProfileRequest extends FormRequest
         $rules = array_merge($rules, [
             'experience_years' => 'sometimes|integer|min:0|max:50',
             'bio' => 'sometimes|nullable|string|max:1000',
-            'hourly_rate' => 'sometimes|nullable|numeric|min:0|max:99999.99',
             'gender_preference' => 'sometimes|nullable|in:male,female,both',
             'is_available' => 'sometimes|boolean',
         ]);
@@ -92,7 +91,6 @@ class UpdateTrainerProfileRequest extends FormRequest
             'sport_id' => 'sport',
             'tier_id' => 'tier',
             'experience_years' => 'years of experience',
-            'hourly_rate' => 'hourly rate',
             'gender_preference' => 'gender preference',
             'is_verified' => 'verification status',
             'is_available' => 'availability status',
@@ -114,9 +112,6 @@ class UpdateTrainerProfileRequest extends FormRequest
             'experience_years.integer' => 'Experience years must be a valid number.',
             'experience_years.min' => 'Experience years cannot be negative.',
             'experience_years.max' => 'Experience years cannot exceed 50 years.',
-            'hourly_rate.numeric' => 'Hourly rate must be a valid number.',
-            'hourly_rate.min' => 'Hourly rate cannot be negative.',
-            'hourly_rate.max' => 'Hourly rate is too high.',
             'bio.max' => 'Bio cannot exceed 1000 characters.',
             'gender_preference.in' => 'Gender preference must be male, female, or both.',
             'rating.numeric' => 'Rating must be a valid number.',

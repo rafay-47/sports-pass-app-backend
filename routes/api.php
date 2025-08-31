@@ -406,13 +406,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
     });
 
-    // Notification management routes (admin only)
+    // Notification management routes (admin, owner, and member access)
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/', [NotificationController::class, 'store'])->name('notifications.store');
+        Route::get('/{notification}', [NotificationController::class, 'show'])->name('notifications.show');
+        Route::put('/{notification}', [NotificationController::class, 'update'])->name('notifications.update');
+        Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    });
+
+    // Admin-only notification routes
     Route::prefix('admin/notifications')->middleware('role:admin')->group(function () {
-        Route::get('/', [NotificationController::class, 'index'])->name('admin.notifications.index');
-        Route::post('/', [NotificationController::class, 'store'])->name('admin.notifications.store');
-        Route::get('/{notification}', [NotificationController::class, 'show'])->name('admin.notifications.show');
-        Route::put('/{notification}', [NotificationController::class, 'update'])->name('admin.notifications.update');
-        Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('admin.notifications.destroy');
+        // Admin-specific notification management can be added here if needed
     });
 
     // Membership management routes

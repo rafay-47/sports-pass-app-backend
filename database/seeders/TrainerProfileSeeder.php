@@ -150,7 +150,6 @@ class TrainerProfileSeeder extends Seeder
                     'bio' => 'Expert trainer with 15+ years of experience. Specialized in advanced training techniques and has trained national level athletes.',
                     'rating' => 4.9,
                     'experience_years' => 15,
-                    'hourly_rate' => 120.00,
                     'total_sessions' => 450,
                     'total_earnings' => 54000.00,
                     'monthly_earnings' => 8500.00,
@@ -184,7 +183,6 @@ class TrainerProfileSeeder extends Seeder
                     'gender_preference' => 'female',
                     'rating' => 4.6,
                     'experience_years' => 4,
-                    'hourly_rate' => 65.00,
                 ]);
             }
         }
@@ -216,7 +214,6 @@ class TrainerProfileSeeder extends Seeder
                     'bio' => 'Enthusiastic new trainer ready to help you achieve your fitness goals. Fresh perspective with latest training methodologies.',
                     'rating' => 4.1,
                     'experience_years' => 1,
-                    'hourly_rate' => 35.00,
                 ]);
             }
         }
@@ -245,7 +242,6 @@ class TrainerProfileSeeder extends Seeder
                     'bio' => 'Passionate trainer awaiting verification. Eager to start helping clients achieve their fitness goals.',
                     'rating' => 0.0,
                     'experience_years' => 2,
-                    'hourly_rate' => 40.00,
                     'total_sessions' => 0,
                     'total_earnings' => 0.00,
                     'monthly_earnings' => 0.00,

@@ -22,7 +22,6 @@ class TrainerProfile extends Model
         'tier_id',
         'experience_years',
         'bio',
-        'hourly_rate',
         'rating',
         'total_sessions',
         'total_earnings',
@@ -37,7 +36,6 @@ class TrainerProfile extends Model
      */
     protected $casts = [
         'experience_years' => 'integer',
-        'hourly_rate' => 'decimal:2',
         'rating' => 'decimal:2',
         'total_sessions' => 'integer',
         'total_earnings' => 'decimal:2',
@@ -176,20 +174,6 @@ class TrainerProfile extends Model
         }
         if ($maxYears !== null) {
             $query->where('experience_years', '<=', $maxYears);
-        }
-        return $query;
-    }
-
-    /**
-     * Scope: Trainers by hourly rate range.
-     */
-    public function scopeByHourlyRate($query, $minRate = null, $maxRate = null)
-    {
-        if ($minRate !== null) {
-            $query->where('hourly_rate', '>=', $minRate);
-        }
-        if ($maxRate !== null) {
-            $query->where('hourly_rate', '<=', $maxRate);
         }
         return $query;
     }
@@ -355,11 +339,6 @@ class TrainerProfile extends Model
         // Validate experience years
         if ($this->experience_years !== null && $this->experience_years < 0) {
             throw new \InvalidArgumentException("Experience years cannot be negative. Got: {$this->experience_years}");
-        }
-
-        // Validate hourly rate
-        if ($this->hourly_rate !== null && $this->hourly_rate <= 0) {
-            throw new \InvalidArgumentException("Hourly rate must be positive when set. Got: {$this->hourly_rate}");
         }
 
         // Validate earnings

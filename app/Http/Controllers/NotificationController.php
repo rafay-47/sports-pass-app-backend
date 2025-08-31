@@ -55,11 +55,11 @@ class NotificationController extends Controller
      */
     public function store(StoreNotificationRequest $request): JsonResponse
     {
-        // Only admins can create notifications
-        if ($request->user()->user_role !== 'admin') {
+        // Only admins, owners, and members can create notifications
+        if (!in_array($request->user()->user_role, ['admin', 'owner', 'member'])) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Only admins can create notifications'
+                'message' => 'Unauthorized to create notifications'
             ], 403);
         }
 
@@ -109,7 +109,7 @@ class NotificationController extends Controller
     {
         // Check if user can update this notification
         if ($notification->user_id !== $request->user()->id &&
-            $request->user()->user_role !== 'admin') {
+            !in_array($request->user()->user_role, ['admin', 'owner'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized'
@@ -140,7 +140,7 @@ class NotificationController extends Controller
     {
         // Check if user can delete this notification
         if ($notification->user_id !== request()->user()->id &&
-            request()->user()->user_role !== 'admin') {
+            !in_array(request()->user()->user_role, ['admin', 'owner'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized'
