@@ -368,13 +368,17 @@ class TrainerProfileSeeder extends Seeder
             $startTime = fake()->randomElement(['06:00', '07:00', '08:00', '09:00']);
             $endTime = fake()->randomElement(['17:00', '18:00', '19:00', '20:00', '21:00']);
 
-            TrainerAvailability::create([
-                'trainer_profile_id' => $profile->id,
-                'day_of_week' => $dayName,
-                'start_time' => $startTime,
-                'end_time' => $endTime,
-                'is_available' => fake()->boolean(90),
-            ]);
+            TrainerAvailability::updateOrCreate(
+                [
+                    'trainer_profile_id' => $profile->id,
+                    'day_of_week' => $dayName,
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
+                ],
+                [
+                    'is_available' => fake()->boolean(90),
+                ]
+            );
         }
     }
 

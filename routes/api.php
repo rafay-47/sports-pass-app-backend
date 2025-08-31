@@ -21,6 +21,8 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventRegistrationController;
 use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\ClubImageController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -385,6 +387,32 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Member's own service purchases
         Route::get('/service-purchases', [ServicePurchaseController::class, 'myPurchases'])->name('member.service-purchases');
+        
+        // Member's notifications
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('member.notifications');
+        Route::get('/notifications/statistics', [NotificationController::class, 'statistics'])->name('member.notifications.statistics');
+        Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('member.notifications.mark-all-read');
+        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('member.notifications.mark-read');
+        Route::patch('/notifications/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('member.notifications.mark-unread');
+    });
+
+    // Payment management routes
+    Route::prefix('payments')->group(function () {
+        Route::get('/', [PaymentController::class, 'index'])->name('payments.index');
+        Route::post('/', [PaymentController::class, 'store'])->name('payments.store');
+        Route::get('/statistics', [PaymentController::class, 'statistics'])->name('payments.statistics');
+        Route::get('/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+        Route::put('/{payment}', [PaymentController::class, 'update'])->name('payments.update');
+        Route::delete('/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
+    });
+
+    // Notification management routes (admin only)
+    Route::prefix('admin/notifications')->middleware('role:admin')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('admin.notifications.index');
+        Route::post('/', [NotificationController::class, 'store'])->name('admin.notifications.store');
+        Route::get('/{notification}', [NotificationController::class, 'show'])->name('admin.notifications.show');
+        Route::put('/{notification}', [NotificationController::class, 'update'])->name('admin.notifications.update');
+        Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('admin.notifications.destroy');
     });
 
     // Membership management routes

@@ -27,8 +27,13 @@ class EventRegistrationSeeder extends Seeder
         $paymentStatuses = ['pending', 'paid', 'refunded'];
 
         foreach ($events as $event) {
-            // Register 3-8 random users per event
-            $numRegistrations = rand(3, min(8, $users->count()));
+            // Register 1 to min(3, available users) per event
+            $maxRegistrations = min(3, $users->count());
+            if ($maxRegistrations < 1) {
+                continue; // Skip if no users available
+            }
+
+            $numRegistrations = rand(1, $maxRegistrations);
             $selectedUsers = $users->random($numRegistrations);
 
             foreach ($selectedUsers as $user) {
@@ -36,15 +41,19 @@ class EventRegistrationSeeder extends Seeder
                 $status = $statuses[array_rand($statuses)];
                 $paymentStatus = $paymentStatuses[array_rand($paymentStatuses)];
 
-                EventRegistration::create([
-                    'event_id' => $event->id,
-                    'user_id' => $user->id,
-                    'registration_date' => $registrationDate,
-                    'status' => $status,
-                    'payment_status' => $paymentStatus,
-                    'payment_amount' => $event->fee ?? rand(10, 100),
-                    'notes' => $this->getRandomNote($status),
-                ]);
+                EventRegistration::updateOrCreate(
+                    [
+                        'event_id' => $event->id,
+                        'user_id' => $user->id,
+                    ],
+                    [
+                        'registration_date' => $registrationDate,
+                        'status' => $status,
+                        'payment_status' => $paymentStatus,
+                        'payment_amount' => $event->fee ?? rand(10, 100),
+                        'notes' => $this->getRandomNote($status),
+                    ]
+                );
             }
         }
 

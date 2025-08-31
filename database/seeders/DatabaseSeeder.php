@@ -61,5 +61,11 @@ class DatabaseSeeder extends Seeder
         
         // Seed service purchases (depends on users, memberships, and sport services)
         $this->call(ServicePurchaseSeeder::class);
+
+        // Seed payments (depends on users, memberships, events, trainer sessions, etc.)
+        $this->call(PaymentSeeder::class);
+
+        // Seed notifications (depends on users)
+        $this->call(NotificationSeeder::class);
     }
 }

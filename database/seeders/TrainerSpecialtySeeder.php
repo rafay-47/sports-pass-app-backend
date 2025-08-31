@@ -203,12 +203,16 @@ class TrainerSpecialtySeeder extends Seeder
                 
                 $usedSpecialties[] = $specialty;
                 
-                TrainerSpecialty::create([
-                    'id' => (string) Str::uuid(),
-                    'trainer_profile_id' => $trainer->id,
-                    'specialty' => $specialty,
-                    'created_at' => now(),
-                ]);
+                TrainerSpecialty::updateOrCreate(
+                    [
+                        'trainer_profile_id' => $trainer->id,
+                        'specialty' => $specialty,
+                    ],
+                    [
+                        'id' => (string) Str::uuid(),
+                        'created_at' => now(),
+                    ]
+                );
             }
         }
         
