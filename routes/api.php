@@ -413,6 +413,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{notification}', [NotificationController::class, 'show'])->name('notifications.show');
         Route::put('/{notification}', [NotificationController::class, 'update'])->name('notifications.update');
         Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+        
+        // Read/unread actions
+        Route::patch('/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+        Route::patch('/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('notifications.mark-unread');
     });
 
     // Admin-only notification routes
