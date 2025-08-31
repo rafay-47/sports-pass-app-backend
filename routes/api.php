@@ -387,13 +387,6 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Member's own service purchases
         Route::get('/service-purchases', [ServicePurchaseController::class, 'myPurchases'])->name('member.service-purchases');
-        
-        // Member's notifications
-        Route::get('/notifications', [NotificationController::class, 'index'])->name('member.notifications');
-        Route::get('/notifications/statistics', [NotificationController::class, 'statistics'])->name('member.notifications.statistics');
-        Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('member.notifications.mark-all-read');
-        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('member.notifications.mark-read');
-        Route::patch('/notifications/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('member.notifications.mark-unread');
     });
 
     // Payment management routes
@@ -410,6 +403,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('notifications')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
         Route::post('/', [NotificationController::class, 'store'])->name('notifications.store');
+        Route::get('/statistics', [NotificationController::class, 'statistics'])->name('notifications.statistics');
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
         Route::get('/{notification}', [NotificationController::class, 'show'])->name('notifications.show');
         Route::put('/{notification}', [NotificationController::class, 'update'])->name('notifications.update');
         Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
