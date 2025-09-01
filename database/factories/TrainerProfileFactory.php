@@ -30,8 +30,7 @@ class TrainerProfileFactory extends Factory
         $experienceYears = fake()->numberBetween(1, 20);
         $rating = fake()->randomFloat(2, 3.0, 5.0);
         $totalSessions = fake()->numberBetween(0, 500);
-        $hourlyRate = fake()->randomFloat(2, 25.00, 150.00);
-        $totalEarnings = $totalSessions * $hourlyRate * fake()->randomFloat(1, 0.8, 1.2);
+        $totalEarnings = $totalSessions * 50 * fake()->randomFloat(1, 0.8, 1.2); // Using fixed rate of 50
         
         return [
             'id' => fake()->uuid(),
@@ -40,7 +39,6 @@ class TrainerProfileFactory extends Factory
             'tier_id' => Tier::factory(),
             'experience_years' => $experienceYears,
             'bio' => fake()->paragraphs(3, true),
-            'hourly_rate' => $hourlyRate,
             'rating' => $rating,
             'total_sessions' => $totalSessions,
             'total_earnings' => round($totalEarnings, 2),
@@ -98,7 +96,6 @@ class TrainerProfileFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'experience_years' => fake()->numberBetween(1, 2),
-            'hourly_rate' => fake()->randomFloat(2, 25.00, 45.00),
             'rating' => fake()->randomFloat(2, 3.0, 4.2),
         ]);
     }
@@ -110,7 +107,6 @@ class TrainerProfileFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'experience_years' => fake()->numberBetween(3, 5),
-            'hourly_rate' => fake()->randomFloat(2, 40.00, 70.00),
             'rating' => fake()->randomFloat(2, 3.5, 4.5),
         ]);
     }
@@ -122,7 +118,6 @@ class TrainerProfileFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'experience_years' => fake()->numberBetween(6, 10),
-            'hourly_rate' => fake()->randomFloat(2, 65.00, 100.00),
             'rating' => fake()->randomFloat(2, 4.0, 4.8),
         ]);
     }
@@ -134,7 +129,6 @@ class TrainerProfileFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'experience_years' => fake()->numberBetween(10, 20),
-            'hourly_rate' => fake()->randomFloat(2, 90.00, 150.00),
             'rating' => fake()->randomFloat(2, 4.3, 5.0),
         ]);
     }

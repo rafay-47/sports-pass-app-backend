@@ -92,6 +92,14 @@ class Club extends Model
     }
 
     /**
+     * Get the trainers associated with this club.
+     */
+    public function trainers(): BelongsToMany
+    {
+        return $this->belongsToMany(TrainerProfile::class, 'trainer_clubs');
+    }
+
+    /**
      * Get the images for this club.
      */
     public function images(): HasMany

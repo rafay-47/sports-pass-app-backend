@@ -6,6 +6,7 @@ use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Models\Sport;
 use App\Models\Tier;
+use App\Models\Club;
 use App\Models\TrainerCertification;
 use App\Http\Requests\StoreTrainerProfileRequest;
 use App\Http\Requests\UpdateTrainerProfileRequest;
@@ -39,6 +40,10 @@ class TrainerProfileController extends Controller
                 }
                 $query->orderBy('is_primary', 'desc')
                       ->orderBy('location_type', 'asc');
+            },
+            'clubs' => function ($query) {
+                $query->select('clubs.id', 'clubs.name', 'clubs.address', 'clubs.city')
+                      ->orderBy('trainer_clubs.is_primary', 'desc');
             },
             'availability' => function ($query) {
                 $query->where('is_available', true)
@@ -176,22 +181,6 @@ class TrainerProfileController extends Controller
             ];
 
             $trainerProfile = TrainerProfile::create($trainerData);
-
-            // Create certifications if provided
-            if ($request->has('certifications') && is_array($request->certifications)) {
-                foreach ($request->certifications as $certificationData) {
-                    TrainerCertification::create([
-                        'trainer_profile_id' => $trainerProfile->id,
-                        'certification_name' => $certificationData['certification_name'],
-                        'issuing_organization' => $certificationData['issuing_organization'] ?? null,
-                        'issue_date' => $certificationData['issue_date'] ?? null,
-                        'expiry_date' => $certificationData['expiry_date'] ?? null,
-                        'certificate_url' => $certificationData['certificate_url'] ?? null,
-                        'is_verified' => $certificationData['is_verified'] ?? false,
-                    ]);
-                }
-            }
-
             $trainerProfile->load([
                 'user:id,name,email,phone,gender',
                 'sport:id,name,display_name,icon,color',
@@ -199,8 +188,42 @@ class TrainerProfileController extends Controller
                 'specialties',
                 'certifications',
                 'locations',
+                'clubs' => function ($query) {
+                    $query->select('clubs.id', 'clubs.name', 'clubs.address', 'clubs.city')
+                          ->orderBy('trainer_clubs.is_primary', 'desc');
+                },
                 'availability'
             ]);
+
+            // Attach clubs if provided
+            if ($request->filled('club_ids')) {
+                $clubIds = $request->club_ids;
+                $clubsData = [];
+                
+                foreach ($clubIds as $index => $clubId) {
+                    $clubsData[$clubId] = [
+                        'is_primary' => $index === 0, // First club is primary
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+                
+                $trainerProfile->clubs()->attach($clubsData);
+            }
+
+            // Create certificates if provided
+            if ($request->filled('certificates')) {
+                foreach ($request->certificates as $certificateData) {
+                    $trainerProfile->certifications()->create([
+                        'certification_name' => $certificateData['certification_name'],
+                        'issuing_organization' => $certificateData['issuing_organization'],
+                        'issue_date' => $certificateData['issue_date'],
+                        'expiry_date' => $certificateData['expiry_date'] ?? null,
+                        'certificate_url' => $certificateData['certificate_url'] ?? null,
+                        'is_verified' => $certificateData['is_verified'] ?? false,
+                    ]);
+                }
+            }
 
             DB::commit();
 
@@ -247,6 +270,10 @@ class TrainerProfileController extends Controller
                 }
                 $query->orderBy('is_primary', 'desc')
                       ->orderBy('location_type', 'asc');
+            },
+            'clubs' => function ($query) {
+                $query->select('clubs.id', 'clubs.name', 'clubs.address', 'clubs.city')
+                      ->orderBy('trainer_clubs.is_primary', 'desc');
             },
             'availability' => function ($query) {
                 $query->where('is_available', true)
@@ -295,7 +322,48 @@ class TrainerProfileController extends Controller
     public function update(UpdateTrainerProfileRequest $request, TrainerProfile $trainerProfile): JsonResponse
     {
         try {
-            $trainerProfile->update($request->validated());
+            // Get validated data
+            $validatedData = $request->validated();
+            
+            // Handle clubs separately
+            if (isset($validatedData['club_ids'])) {
+                $clubIds = $validatedData['club_ids'];
+                $clubsData = [];
+                
+                foreach ($clubIds as $index => $clubId) {
+                    $clubsData[$clubId] = [
+                        'is_primary' => $index === 0, // First club is primary
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+                
+                $trainerProfile->clubs()->sync($clubsData);
+                unset($validatedData['club_ids']);
+            }
+
+            // Handle certificates separately
+            if (isset($validatedData['certificates'])) {
+                // Delete existing certificates and create new ones
+                $trainerProfile->certifications()->delete();
+                
+                foreach ($validatedData['certificates'] as $certificateData) {
+                    $trainerProfile->certifications()->create([
+                        'certification_name' => $certificateData['certification_name'],
+                        'issuing_organization' => $certificateData['issuing_organization'],
+                        'issue_date' => $certificateData['issue_date'],
+                        'expiry_date' => $certificateData['expiry_date'] ?? null,
+                        'certificate_url' => $certificateData['certificate_url'] ?? null,
+                        'is_verified' => $certificateData['is_verified'] ?? false,
+                    ]);
+                }
+                
+                unset($validatedData['certificates']);
+            }
+
+            // Update the trainer profile with remaining data
+            $trainerProfile->update($validatedData);
+            
             $trainerProfile->load([
                 'user:id,name,email,phone,gender',
                 'sport:id,name,display_name,icon,color',
@@ -303,6 +371,10 @@ class TrainerProfileController extends Controller
                 'specialties',
                 'certifications',
                 'locations',
+                'clubs' => function ($query) {
+                    $query->select('clubs.id', 'clubs.name', 'clubs.address', 'clubs.city')
+                          ->orderBy('trainer_clubs.is_primary', 'desc');
+                },
                 'availability'
             ]);
 
@@ -448,6 +520,10 @@ class TrainerProfileController extends Controller
                 }
                 $query->orderBy('is_primary', 'desc')
                       ->orderBy('location_type', 'asc');
+            },
+            'clubs' => function ($query) {
+                $query->select('clubs.id', 'clubs.name', 'clubs.address', 'clubs.city')
+                      ->orderBy('trainer_clubs.is_primary', 'desc');
             },
             'availability' => function ($query) {
                 $query->where('is_available', true)
@@ -606,6 +682,10 @@ class TrainerProfileController extends Controller
             'specialties',
             'certifications',
             'locations',
+            'clubs' => function ($query) {
+                $query->select('clubs.id', 'clubs.name', 'clubs.address', 'clubs.city')
+                      ->orderBy('trainer_clubs.is_primary', 'desc');
+            },
             'availability'
         ])->where('user_id', $request->user()->id)->first();
 
@@ -646,6 +726,51 @@ class TrainerProfileController extends Controller
             'data' => [
                 'trainer_profile' => $trainerProfile->fresh()
             ]
+        ]);
+    }
+
+    /**
+     * Add a club to the trainer's profile.
+     */
+    public function addClub(Request $request, TrainerProfile $trainerProfile): JsonResponse
+    {
+        $request->validate([
+            'club_id' => 'required|uuid|exists:clubs,id',
+            'is_primary' => 'boolean'
+        ]);
+
+        // Check if the club is already associated
+        if ($trainerProfile->clubs()->where('club_id', $request->club_id)->exists()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Club is already associated with this trainer'
+            ], 400);
+        }
+
+        $trainerProfile->clubs()->attach($request->club_id, [
+            'is_primary' => $request->is_primary ?? false
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Club added to trainer successfully'
+        ]);
+    }
+
+    /**
+     * Remove a club from the trainer's profile.
+     */
+    public function removeClub(Request $request, TrainerProfile $trainerProfile): JsonResponse
+    {
+        $request->validate([
+            'club_id' => 'required|uuid|exists:clubs,id'
+        ]);
+
+        $trainerProfile->clubs()->detach($request->club_id);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Club removed from trainer successfully'
         ]);
     }
 }

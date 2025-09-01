@@ -288,6 +288,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{trainerProfile}/unverify', [TrainerProfileController::class, 'unverify'])->name('trainer-profiles.unverify');
         Route::post('/{trainerProfile}/toggle-availability', [TrainerProfileController::class, 'toggleAvailability'])->name('trainer-profiles.toggle-availability');
         Route::post('/{trainerProfile}/update-statistics', [TrainerProfileController::class, 'updateStatistics'])->name('trainer-profiles.update-statistics');
+        
+        // Club management for trainers
+        Route::post('/{trainerProfile}/clubs', [TrainerProfileController::class, 'addClub'])->name('trainer-profiles.add-club');
+        Route::delete('/{trainerProfile}/clubs', [TrainerProfileController::class, 'removeClub'])->name('trainer-profiles.remove-club');
     });
 
     // Trainer Certification management routes
@@ -387,6 +391,13 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Member's own service purchases
         Route::get('/service-purchases', [ServicePurchaseController::class, 'myPurchases'])->name('member.service-purchases');
+        
+        // Member's notifications
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('member.notifications');
+        Route::get('/notifications/statistics', [NotificationController::class, 'statistics'])->name('member.notifications.statistics');
+        Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('member.notifications.mark-all-read');
+        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('member.notifications.mark-read');
+        Route::patch('/notifications/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('member.notifications.mark-unread');
     });
 
     // Payment management routes
@@ -399,24 +410,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
     });
 
-    // Notification management routes (admin, owner, and member access)
-    Route::prefix('notifications')->group(function () {
-        Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
-        Route::post('/', [NotificationController::class, 'store'])->name('notifications.store');
-        Route::get('/statistics', [NotificationController::class, 'statistics'])->name('notifications.statistics');
-        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
-        Route::get('/{notification}', [NotificationController::class, 'show'])->name('notifications.show');
-        Route::put('/{notification}', [NotificationController::class, 'update'])->name('notifications.update');
-        Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
-        
-        // Read/unread actions
-        Route::patch('/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
-        Route::patch('/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('notifications.mark-unread');
-    });
-
-    // Admin-only notification routes
+    // Notification management routes (admin only)
     Route::prefix('admin/notifications')->middleware('role:admin')->group(function () {
-        // Admin-specific notification management can be added here if needed
+        Route::get('/', [NotificationController::class, 'index'])->name('admin.notifications.index');
+        Route::post('/', [NotificationController::class, 'store'])->name('admin.notifications.store');
+        Route::get('/{notification}', [NotificationController::class, 'show'])->name('admin.notifications.show');
+        Route::put('/{notification}', [NotificationController::class, 'update'])->name('admin.notifications.update');
+        Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('admin.notifications.destroy');
     });
 
     // Membership management routes

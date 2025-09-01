@@ -71,8 +71,8 @@ class TrainerSessionSeeder extends Seeder
                                    ($status === 'cancelled' ? 'refunded' : 'pending');
                 }
 
-                // Session fee based on trainer's hourly rate
-                $baseFee = floatval($trainer->hourly_rate ?? 100);
+                // Session fee based on default rate
+                $baseFee = 100; // Default hourly rate
                 $sessionDurationHours = $durationMinutes / 60;
                 $sessionFee = $baseFee * $sessionDurationHours;
 

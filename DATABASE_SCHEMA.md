@@ -164,7 +164,6 @@ CREATE TABLE trainer_profiles (\
     tier_id UUID NOT NULL, -- References the membership tier\
     experience_years INTEGER NOT NULL,\
     bio TEXT,\
-    hourly_rate DECIMAL(10,2), -- Fixed based on tier\
     rating DECIMAL(3,2) DEFAULT 0.0,\
     total_sessions INTEGER DEFAULT 0,\
     total_earnings DECIMAL(10,2) DEFAULT 0,\
@@ -251,6 +250,24 @@ CREATE TABLE trainer_locations (\
     FOREIGN KEY (trainer_profile_id) REFERENCES trainer_profiles(id) ON DELETE CASCADE,\
     INDEX idx_trainer_locations_trainer (trainer_profile_id),\
     INDEX idx_trainer_locations_coords (latitude, longitude)\
+);\
+
+```
+### 10.1. Trainer Clubs Table
+```sql
+CREATE TABLE trainer_clubs (\
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\
+    trainer_profile_id UUID NOT NULL,\
+    club_id UUID NOT NULL,\
+    is_primary BOOLEAN DEFAULT FALSE,\
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\
+    \
+    FOREIGN KEY (trainer_profile_id) REFERENCES trainer_profiles(id) ON DELETE CASCADE,\
+    FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,\
+    UNIQUE (trainer_profile_id, club_id),\
+    INDEX idx_trainer_clubs_trainer (trainer_profile_id),\
+    INDEX idx_trainer_clubs_club (club_id)\
 );\
 
 ```

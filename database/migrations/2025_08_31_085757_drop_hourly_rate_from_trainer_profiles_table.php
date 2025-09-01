@@ -12,10 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('trainer_profiles', function (Blueprint $table) {
-            // Drop the index first
-            $table->dropIndex(['hourly_rate']);
-            // Then drop the column
-            $table->dropColumn('hourly_rate');
+            //
         });
     }
 
@@ -25,10 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('trainer_profiles', function (Blueprint $table) {
-            // Recreate the column
-            $table->decimal('hourly_rate', 10, 2)->nullable();
-            // Recreate the index
-            $table->index(['hourly_rate']);
+            //
         });
     }
 };

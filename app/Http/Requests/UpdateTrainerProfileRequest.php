@@ -77,6 +77,15 @@ class UpdateTrainerProfileRequest extends FormRequest
             'bio' => 'sometimes|nullable|string|max:1000',
             'gender_preference' => 'sometimes|nullable|in:male,female,both',
             'is_available' => 'sometimes|boolean',
+            'club_ids' => 'sometimes|array',
+            'club_ids.*' => 'uuid|exists:clubs,id',
+            'certificates' => 'sometimes|array',
+            'certificates.*.certification_name' => 'required|string|max:255',
+            'certificates.*.issuing_organization' => 'required|string|max:255',
+            'certificates.*.issue_date' => 'required|date|before_or_equal:today',
+            'certificates.*.expiry_date' => 'nullable|date|after:issue_date',
+            'certificates.*.certificate_url' => 'nullable|url|max:500',
+            'certificates.*.is_verified' => 'boolean',
         ]);
 
         return $rules;
@@ -98,6 +107,14 @@ class UpdateTrainerProfileRequest extends FormRequest
             'total_sessions' => 'total sessions',
             'total_earnings' => 'total earnings',
             'monthly_earnings' => 'monthly earnings',
+            'club_ids' => 'club IDs',
+            'certificates' => 'certificates',
+            'certificates.*.certification_name' => 'certificate name',
+            'certificates.*.issuing_organization' => 'issuing organization',
+            'certificates.*.issue_date' => 'issue date',
+            'certificates.*.expiry_date' => 'expiry date',
+            'certificates.*.certificate_url' => 'certificate URL',
+            'certificates.*.is_verified' => 'verification status',
         ];
     }
 
@@ -121,6 +138,16 @@ class UpdateTrainerProfileRequest extends FormRequest
             'total_sessions.min' => 'Total sessions cannot be negative.',
             'total_earnings.numeric' => 'Total earnings must be a valid number.',
             'monthly_earnings.numeric' => 'Monthly earnings must be a valid number.',
+            'club_ids.array' => 'Club IDs must be provided as an array.',
+            'club_ids.*.exists' => 'One or more selected clubs do not exist.',
+            'certificates.array' => 'Certificates must be provided as an array.',
+            'certificates.*.certification_name.required' => 'Certificate name is required.',
+            'certificates.*.issuing_organization.required' => 'Issuing organization is required.',
+            'certificates.*.issue_date.required' => 'Issue date is required.',
+            'certificates.*.issue_date.before_or_equal' => 'Issue date cannot be in the future.',
+            'certificates.*.expiry_date.after' => 'Expiry date must be after the issue date.',
+            'certificates.*.certificate_url.url' => 'Certificate URL must be a valid URL.',
+            'certificates.*.certificate_url.max' => 'Certificate URL cannot exceed 500 characters.',
         ];
     }
 }

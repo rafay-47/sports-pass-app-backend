@@ -39,6 +39,8 @@ Returns a paginated list of verified and available trainer profiles.
 | max_rating | decimal | Maximum rating filter | `max_rating=5.0` |
 | min_experience | integer | Minimum years of experience | `min_experience=2` |
 | max_experience | integer | Maximum years of experience | `max_experience=10` |
+| min_rate | decimal | Minimum hourly rate | `min_rate=30.00` |
+| max_rate | decimal | Maximum hourly rate | `max_rate=100.00` |
 | gender_preference | enum | Gender preference | `gender_preference=female` |
 | search | string | Search in trainer names, emails, sports, bio | `search=Ahmed` |
 | sort_by | string | Sort field | `sort_by=rating` |
@@ -58,6 +60,7 @@ Returns a paginated list of verified and available trainer profiles.
                 "tier_id": "123e4567-e89b-12d3-a456-426614174003",
                 "experience_years": 5,
                 "bio": "Experienced fitness trainer specializing in strength training and weight loss.",
+                "hourly_rate": "75.00",
                 "rating": "4.50",
                 "total_sessions": 150,
                 "total_earnings": "11250.00",
@@ -121,6 +124,7 @@ Returns detailed information about a specific trainer profile.
             "tier_id": "123e4567-e89b-12d3-a456-426614174003",
             "experience_years": 5,
             "bio": "Experienced fitness trainer with certifications in personal training and nutrition.",
+            "hourly_rate": "75.00",
             "rating": "4.50",
             "total_sessions": 150,
             "is_verified": true,
@@ -161,11 +165,10 @@ Returns detailed information about a specific trainer profile.
             "certifications": [
                 {
                     "id": "123e4567-e89b-12d3-a456-426614174005",
-                    "certification_name": "Certified Personal Trainer",
+                    "name": "Certified Personal Trainer",
                     "issuing_organization": "ACSM",
                     "issue_date": "2023-01-15",
                     "expiry_date": "2026-01-15",
-                    "certificate_url": "https://example.com/certificates/acsm-certified-trainer.pdf",
                     "is_verified": true
                 }
             ]
@@ -203,6 +206,7 @@ Returns trainers specialized in a specific sport.
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "experience_years": 5,
                 "bio": "Experienced fitness trainer...",
+                "hourly_rate": "75.00",
                 "rating": "4.50",
                 "is_verified": true,
                 "is_available": true,
@@ -242,18 +246,9 @@ Creates a new trainer profile. Requires authentication.
     "tier_id": "123e4567-e89b-12d3-a456-426614174003",
     "experience_years": 5,
     "bio": "Experienced fitness trainer with a passion for helping clients achieve their goals.",
+    "hourly_rate": 75.00,
     "is_available": true,
-    "gender_preference": "both",
-    "certifications": [
-        {
-            "certification_name": "Certified Personal Trainer",
-            "issuing_organization": "National Academy of Sports Medicine",
-            "issue_date": "2023-01-15",
-            "expiry_date": "2026-01-15",
-            "certificate_url": "https://example.com/certificates/certified-personal-trainer.pdf",
-            "is_verified": false
-        }
-    ]
+    "gender_preference": "both"
 }
 ```
 
@@ -263,15 +258,9 @@ Creates a new trainer profile. Requires authentication.
 - `tier_id`: required, exists in active tiers
 - `experience_years`: required, integer, min: 0, max: 50
 - `bio`: required, string, min: 50 characters, max: 1000 characters
+- `hourly_rate`: optional, numeric, min: 10.00, max: 500.00
 - `is_available`: optional, boolean
 - `gender_preference`: optional, enum: male, female, both
-- `certifications`: optional, array of objects
-  - `certification_name`: required, string, min: 2, max: 200 characters
-  - `issuing_organization`: optional, string, max: 200 characters
-  - `issue_date`: optional, date, must be before or equal to today
-  - `expiry_date`: optional, date, must be after issue_date
-  - `certificate_url`: optional, URL, max: 500 characters
-  - `is_verified`: optional, boolean
 
 #### Response:
 ```json
@@ -286,6 +275,7 @@ Creates a new trainer profile. Requires authentication.
             "tier_id": "123e4567-e89b-12d3-a456-426614174003",
             "experience_years": 5,
             "bio": "Experienced fitness trainer...",
+            "hourly_rate": "75.00",
             "rating": "0.00",
             "total_sessions": 0,
             "total_earnings": "0.00",
@@ -295,20 +285,7 @@ Creates a new trainer profile. Requires authentication.
             "gender_preference": "both",
             "created_at": "2025-08-18T10:00:00.000000Z",
             "updated_at": "2025-08-18T10:00:00.000000Z"
-        },
-        "certifications": [
-            {
-                "id": "123e4567-e89b-12d3-a456-426614174004",
-                "trainer_profile_id": "123e4567-e89b-12d3-a456-426614174000",
-                "certification_name": "Certified Personal Trainer",
-                "issuing_organization": "National Academy of Sports Medicine",
-                "issue_date": "2023-01-15",
-                "expiry_date": "2026-01-15",
-                "certificate_url": "https://example.com/certificates/certified-personal-trainer.pdf",
-                "is_verified": false,
-                "created_at": "2025-08-18T10:00:00.000000Z"
-            }
-        ]
+        }
     }
 }
 ```
@@ -323,6 +300,7 @@ Updates an existing trainer profile. Trainers can only update their own profiles
 {
     "experience_years": 6,
     "bio": "Updated bio with new achievements and certifications.",
+    "hourly_rate": 80.00,
     "is_available": true,
     "gender_preference": "both"
 }
@@ -426,6 +404,7 @@ Returns comprehensive trainer statistics. Only admins and owners can access.
             "average_rating": 4.35,
             "total_sessions": 15000,
             "total_earnings": "1125000.00",
+            "average_hourly_rate": 65.50,
             "sports_breakdown": [
                 {
                     "name": "fitness",
@@ -516,12 +495,13 @@ Updates trainer statistics (used internally or by admins). Trainers can update t
 ### Filtering Combinations:
 You can combine multiple filters for precise trainer searches:
 ```
-GET /trainers?sport_id=123&min_rating=4.0&gender_preference=female&verified=true
+GET /trainers?sport_id=123&min_rating=4.0&max_rate=100&gender_preference=female&verified=true
 ```
 
 ### Sorting Options:
 - `rating` (default)
 - `experience_years`
+- `hourly_rate`
 - `total_sessions`
 - `user_name`
 - `sport_name`
@@ -573,18 +553,7 @@ curl -X POST "https://api.sportsclub.pk/api/trainer-profiles" \
     "tier_id": "123e4567-e89b-12d3-a456-426614174003",
     "experience_years": 5,
     "bio": "Passionate fitness trainer with 5 years of experience...",
-    "is_available": true,
-    "gender_preference": "both",
-    "certifications": [
-      {
-        "certification_name": "Certified Personal Trainer",
-        "issuing_organization": "National Academy of Sports Medicine",
-        "issue_date": "2023-01-15",
-        "expiry_date": "2026-01-15",
-        "certificate_url": "https://example.com/certificates/certified-personal-trainer.pdf",
-        "is_verified": false
-      }
-    ]
+    "hourly_rate": 75.00
   }'
 ```
 

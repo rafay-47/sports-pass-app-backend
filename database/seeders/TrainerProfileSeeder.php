@@ -10,8 +10,10 @@ use App\Models\TrainerLocation;
 use App\Models\User;
 use App\Models\Sport;
 use App\Models\Tier;
+use App\Models\Club;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class TrainerProfileSeeder extends Seeder
 {
@@ -276,6 +278,9 @@ class TrainerProfileSeeder extends Seeder
             
             // Create locations
             $this->createLocations($profile);
+            
+            // Create trainer clubs
+            $this->createTrainerClubs($profile);
         }
 
         $this->command->info('Trainer related data created successfully!');
@@ -445,6 +450,25 @@ class TrainerProfileSeeder extends Seeder
                     'is_active' => true,
                 ]);
             }
+        }
+    }
+
+    /**
+     * Create trainer clubs associations.
+     */
+    private function createTrainerClubs(TrainerProfile $profile): void
+    {
+        $clubs = Club::inRandomOrder()->take(fake()->numberBetween(1, 3))->get();
+        
+        foreach ($clubs as $index => $club) {
+            DB::table('trainer_clubs')->updateOrInsert([
+                'trainer_profile_id' => $profile->id,
+                'club_id' => $club->id,
+            ], [
+                'is_primary' => $index === 0, // First club is primary
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
     }
 }
