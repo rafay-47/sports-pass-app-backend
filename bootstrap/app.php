@@ -12,16 +12,36 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Remove EnsureFrontendRequestsAreStateful for API routes to prevent redirect issues
         $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            \App\Http\Middleware\EnsureApiResponse::class,
         ]);
 
         $middleware->alias([
             'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
             'role' => \App\Http\Middleware\CheckUserRole::class,
             'trainer' => \App\Http\Middleware\CheckTrainerRole::class,
+            'api_response' => \App\Http\Middleware\EnsureApiResponse::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthenticated',
+                    'error' => 'Authentication required to access this resource'
+                ], 401);
+            }
+        });
+
+        $exceptions->render(function (\Illuminate\Auth\Access\AuthorizationException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized',
+                    'error' => 'You do not have permission to access this resource'
+                ], 403);
+            }
+        });
     })->create();

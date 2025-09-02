@@ -150,4 +150,18 @@ class UpdateTrainerProfileRequest extends FormRequest
             'certificates.*.certificate_url.max' => 'Certificate URL cannot exceed 500 characters.',
         ];
     }
+
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        $response = response()->json([
+            'status' => 'error',
+            'message' => 'Validation failed',
+            'errors' => $validator->errors()
+        ], 422);
+
+        throw new \Illuminate\Validation\ValidationException($validator, $response);
+    }
 }
