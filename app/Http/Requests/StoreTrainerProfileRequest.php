@@ -34,16 +34,22 @@ class StoreTrainerProfileRequest extends FormRequest
                         $fail('You can only create trainer profiles for yourself.');
                     }
 
-                    // Check if user already has a trainer profile
-                    $existingProfile = \App\Models\TrainerProfile::where('user_id', $value)->first();
+                    // Check if user already has a trainer profile - optimized with select
+                    $existingProfile = \App\Models\TrainerProfile::select('id')->where('user_id', $value)->exists();
                     if ($existingProfile) {
                         $fail('User already has a trainer profile.');
                     }
 
-                    // Check if user is marked as trainer
-                    $user = \App\Models\User::find($value);
-                    if ($user && !$user->is_trainer) {
-                        $fail('User must be marked as a trainer to create a trainer profile.');
+                    // Check if user has active membership for the selected sport - optimized query
+                    $sportId = $this->input('sport_id');
+                    $activeMembership = \App\Models\Membership::select('id')
+                        ->where('user_id', $value)
+                        ->where('sport_id', $sportId)
+                        ->where('status', 'active')
+                        ->where('expiry_date', '>=', now())
+                        ->exists();
+                    if (!$activeMembership) {
+                        $fail('User must have an active membership for the selected sport to create a trainer profile.');
                     }
                 },
             ],
@@ -51,8 +57,8 @@ class StoreTrainerProfileRequest extends FormRequest
                 'required',
                 'exists:sports,id',
                 function ($attribute, $value, $fail) {
-                    // Check if sport is active
-                    $sport = \App\Models\Sport::find($value);
+                    // Check if sport is active - optimized with select
+                    $sport = \App\Models\Sport::select('id', 'is_active')->find($value);
                     if ($sport && !$sport->is_active) {
                         $fail('Selected sport is not currently active.');
                     }
@@ -62,15 +68,24 @@ class StoreTrainerProfileRequest extends FormRequest
                 'required',
                 'exists:tiers,id',
                 function ($attribute, $value, $fail) {
-                    // Check if tier belongs to the selected sport
-                    $tier = \App\Models\Tier::find($value);
-                    if ($tier && $tier->sport_id !== $this->input('sport_id')) {
-                        $fail('Selected tier does not belong to the selected sport.');
-                    }
+                    // Check if tier belongs to the selected sport and is active/available - optimized query
+                    $tier = \App\Models\Tier::select('id', 'sport_id', 'is_active', 'start_date', 'end_date')
+                        ->where('id', $value)
+                        ->first();
                     
-                    // Check if tier is active and available
-                    if ($tier && (!$tier->is_active || !$tier->is_available)) {
-                        $fail('Selected tier is not currently available.');
+                    if ($tier) {
+                        if ($tier->sport_id !== $this->input('sport_id')) {
+                            $fail('Selected tier does not belong to the selected sport.');
+                        }
+                        
+                        // Check availability using the accessor logic
+                        $now = now()->toDateString();
+                        $startDateOk = !$tier->start_date || $tier->start_date <= $now;
+                        $endDateOk = !$tier->end_date || $tier->end_date >= $now;
+                        
+                        if (!$tier->is_active || !$startDateOk || !$endDateOk) {
+                            $fail('Selected tier is not currently available.');
+                        }
                     }
                 },
             ],

@@ -163,7 +163,8 @@ class TrainerProfileController extends Controller
         try {
             DB::beginTransaction();
 
-            $tier = Tier::findOrFail($request->tier_id);
+            // Get tier data (already validated in request)
+            $tier = Tier::select('id', 'tier_name', 'display_name', 'price')->findOrFail($request->tier_id);
             
             $trainerData = [
                 'user_id' => $request->user_id,
@@ -181,21 +182,8 @@ class TrainerProfileController extends Controller
             ];
 
             $trainerProfile = TrainerProfile::create($trainerData);
-            $trainerProfile->load([
-                'user:id,name,email,phone,gender',
-                'sport:id,name,display_name,icon,color',
-                'tier:id,tier_name,display_name,price',
-                'specialties',
-                'certifications',
-                'locations',
-                'clubs' => function ($query) {
-                    $query->select('clubs.id', 'clubs.name', 'clubs.address', 'clubs.city')
-                          ->orderBy('trainer_clubs.is_primary', 'desc');
-                },
-                'availability'
-            ]);
 
-            // Attach clubs if provided
+            // Attach clubs if provided - optimized bulk operation
             if ($request->filled('club_ids')) {
                 $clubIds = $request->club_ids;
                 $clubsData = [];
@@ -211,21 +199,53 @@ class TrainerProfileController extends Controller
                 $trainerProfile->clubs()->attach($clubsData);
             }
 
-            // Create certificates if provided
+            // Create certificates if provided - optimized bulk insert
             if ($request->filled('certificates')) {
+                $certificatesData = [];
                 foreach ($request->certificates as $certificateData) {
-                    $trainerProfile->certifications()->create([
+                    $certificatesData[] = [
+                        'id' => (string) \Illuminate\Support\Str::uuid(),
+                        'trainer_profile_id' => $trainerProfile->id,
                         'certification_name' => $certificateData['certification_name'],
                         'issuing_organization' => $certificateData['issuing_organization'],
                         'issue_date' => $certificateData['issue_date'],
                         'expiry_date' => $certificateData['expiry_date'] ?? null,
                         'certificate_url' => $certificateData['certificate_url'] ?? null,
                         'is_verified' => $certificateData['is_verified'] ?? false,
-                    ]);
+                    ];
+                }
+                
+                if (!empty($certificatesData)) {
+                    TrainerCertification::insert($certificatesData);
                 }
             }
 
             DB::commit();
+
+            // Load only essential relationships for response
+            $trainerProfile->load([
+                'user:id,name,email,phone,gender',
+                'sport:id,name,display_name,icon,color',
+                'tier:id,tier_name,display_name,price'
+            ]);
+
+            // Load optional relationships only if they exist
+            if ($trainerProfile->clubs()->exists()) {
+                $trainerProfile->load([
+                    'clubs' => function ($query) {
+                        $query->select('clubs.id', 'clubs.name', 'clubs.address', 'clubs.city')
+                              ->orderBy('trainer_clubs.is_primary', 'desc');
+                    }
+                ]);
+            }
+
+            if ($trainerProfile->certifications()->exists()) {
+                $trainerProfile->load([
+                    'certifications' => function ($query) {
+                        $query->orderBy('certification_name', 'asc');
+                    }
+                ]);
+            }
 
             return response()->json([
                 'status' => 'success',
@@ -409,7 +429,18 @@ class TrainerProfileController extends Controller
         }
 
         try {
+            $userId = $trainerProfile->user_id;
             $trainerProfile->delete();
+            
+            // Check if user has any other verified trainer profiles
+            $remainingVerifiedProfiles = TrainerProfile::where('user_id', $userId)
+                ->where('is_verified', true)
+                ->count();
+            
+            // If no verified profiles remain, remove trainer status
+            if ($remainingVerifiedProfiles === 0) {
+                User::where('id', $userId)->update(['is_trainer' => false]);
+            }
 
             return response()->json([
                 'status' => 'success',
@@ -439,6 +470,9 @@ class TrainerProfileController extends Controller
         }
 
         $trainerProfile->update(['is_verified' => true]);
+        
+        // Set user as trainer when profile is verified
+        $trainerProfile->user->update(['is_trainer' => true]);
 
         return response()->json([
             'status' => 'success',
@@ -463,6 +497,17 @@ class TrainerProfileController extends Controller
         }
 
         $trainerProfile->update(['is_verified' => false]);
+        
+        // Check if user has any other verified trainer profiles
+        $otherVerifiedProfiles = TrainerProfile::where('user_id', $trainerProfile->user_id)
+            ->where('is_verified', true)
+            ->where('id', '!=', $trainerProfile->id)
+            ->count();
+        
+        // Only set is_trainer to false if no other verified profiles exist
+        if ($otherVerifiedProfiles === 0) {
+            $trainerProfile->user->update(['is_trainer' => false]);
+        }
 
         return response()->json([
             'status' => 'success',

@@ -467,13 +467,11 @@ Route::middleware('auth:sanctum')->group(function () {
         
         Route::put('/users/{user}/role', function (Request $request, \App\Models\User $user) {
             $request->validate([
-                'user_role' => 'required|in:member,admin,owner',
-                'is_trainer' => 'boolean'
+                'user_role' => 'required|in:member,admin,owner'
             ]);
             
             $user->update([
-                'user_role' => $request->user_role,
-                'is_trainer' => $request->boolean('is_trainer', false)
+                'user_role' => $request->user_role
             ]);
             
             return response()->json([

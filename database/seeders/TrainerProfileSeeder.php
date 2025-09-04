@@ -26,27 +26,27 @@ class TrainerProfileSeeder extends Seeder
         $this->ensureBasicDataExists();
         
         // Ensure we have users, sports, and tiers to work with
-        $trainers = User::where('is_trainer', true)->get();
+        $potentialTrainers = User::where('user_role', 'member')->get();
         $sports = Sport::where('is_active', true)->get();
         $tiers = Tier::where('is_active', true)->get();
 
-        if ($trainers->isEmpty() || $sports->isEmpty() || $tiers->isEmpty()) {
-            $this->command->warn('Not enough trainer users, sports, or tiers found. Creating some...');
+        if ($potentialTrainers->isEmpty() || $sports->isEmpty() || $tiers->isEmpty()) {
+            $this->command->warn('Not enough member users, sports, or tiers found. Creating some...');
             
-            // Create trainer users if none exist
-            if ($trainers->isEmpty()) {
-                $trainerUsers = User::factory(15)->create([
-                    'is_trainer' => true,
-                    'user_role' => 'member'  // Trainers are members with is_trainer = true
+            // Create member users if none exist
+            if ($potentialTrainers->isEmpty()) {
+                $memberUsers = User::factory(15)->create([
+                    'is_trainer' => false,
+                    'user_role' => 'member'
                 ]);
-                $trainers = $trainerUsers;
+                $potentialTrainers = $memberUsers;
             }
         }
 
         $this->command->info('Creating trainer profiles...');
 
-        // Create one trainer profile per trainer user (random sport and tier)
-        foreach ($trainers->take(20) as $trainer) {
+        // Create one trainer profile per potential trainer user (random sport and tier)
+        foreach ($potentialTrainers->take(20) as $trainer) {
             // Skip if this user already has a TrainerProfile
             if (TrainerProfile::where('user_id', $trainer->id)->exists()) {
                 continue;
@@ -99,11 +99,16 @@ class TrainerProfileSeeder extends Seeder
                 $factory = $factory->highEarner();
             }
 
-            $factory->create([
+            $trainerProfile = $factory->create([
                 'user_id' => $trainer->id,
                 'sport_id' => $sport->id,
                 'tier_id' => $tier->id,
             ]);
+            
+            // Set is_trainer to true if the profile is verified
+            if ($trainerProfile->is_verified) {
+                $trainer->update(['is_trainer' => true]);
+            }
         }
 
         // Create some specific trainer profiles for testing
@@ -131,7 +136,7 @@ class TrainerProfileSeeder extends Seeder
             $expertTrainer = User::factory()->create([
                 'name' => 'Muhammad Ahmed',
                 'email' => 'ahmed.expert@sportsclub.pk',
-                'is_trainer' => true,
+                'is_trainer' => false,
                 'user_role' => 'member'
             ]);
         }
@@ -145,7 +150,7 @@ class TrainerProfileSeeder extends Seeder
             }
 
             if ($premiumTier) {
-                TrainerProfile::factory()->expert()->verified()->available()->highEarner()->create([
+                $trainerProfile = TrainerProfile::factory()->expert()->verified()->available()->highEarner()->create([
                     'user_id' => $expertTrainer->id,
                     'sport_id' => $firstSport->id,
                     'tier_id' => $premiumTier->id,
@@ -156,6 +161,9 @@ class TrainerProfileSeeder extends Seeder
                     'total_earnings' => 54000.00,
                     'monthly_earnings' => 8500.00,
                 ]);
+                
+                // Set is_trainer to true since profile is verified
+                $expertTrainer->update(['is_trainer' => true]);
             }
         }
 
@@ -166,7 +174,7 @@ class TrainerProfileSeeder extends Seeder
                 'name' => 'Fatima Khan',
                 'email' => 'fatima.trainer@sportsclub.pk',
                 'gender' => 'female',
-                'is_trainer' => true,
+                'is_trainer' => false,
                 'user_role' => 'member'
             ]);
         }
@@ -177,7 +185,7 @@ class TrainerProfileSeeder extends Seeder
             $sportTiers = $tiers->where('sport_id', $randomSport->id);
             
             if ($sportTiers->isNotEmpty()) {
-                TrainerProfile::factory()->intermediate()->verified()->available()->femaleClients()->create([
+                $trainerProfile = TrainerProfile::factory()->intermediate()->verified()->available()->femaleClients()->create([
                     'user_id' => $femaleTrainer->id,
                     'sport_id' => $randomSport->id,
                     'tier_id' => $sportTiers->random()->id,
@@ -186,6 +194,9 @@ class TrainerProfileSeeder extends Seeder
                     'rating' => 4.6,
                     'experience_years' => 4,
                 ]);
+                
+                // Set is_trainer to true since profile is verified
+                $femaleTrainer->update(['is_trainer' => true]);
             }
         }
 
@@ -195,7 +206,7 @@ class TrainerProfileSeeder extends Seeder
             $beginnerTrainer = User::factory()->create([
                 'name' => 'Ali Hassan',
                 'email' => 'ali.beginner@sportsclub.pk',
-                'is_trainer' => true,
+                'is_trainer' => false,
                 'user_role' => 'member'
             ]);
         }
@@ -209,7 +220,7 @@ class TrainerProfileSeeder extends Seeder
             }
 
             if ($basicTier) {
-                TrainerProfile::factory()->beginner()->verified()->available()->create([
+                $trainerProfile = TrainerProfile::factory()->beginner()->verified()->available()->create([
                     'user_id' => $beginnerTrainer->id,
                     'sport_id' => $randomSport->id,
                     'tier_id' => $basicTier->id,
@@ -217,6 +228,9 @@ class TrainerProfileSeeder extends Seeder
                     'rating' => 4.1,
                     'experience_years' => 1,
                 ]);
+                
+                // Set is_trainer to true since profile is verified
+                $beginnerTrainer->update(['is_trainer' => true]);
             }
         }
 
@@ -226,7 +240,7 @@ class TrainerProfileSeeder extends Seeder
             $unverifiedTrainer = User::factory()->create([
                 'name' => 'Omar Malik',
                 'email' => 'omar.unverified@sportsclub.pk',
-                'is_trainer' => true,
+                'is_trainer' => false,
                 'user_role' => 'member'
             ]);
         }

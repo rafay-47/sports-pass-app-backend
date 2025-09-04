@@ -253,7 +253,7 @@ Creates a new trainer profile. Requires authentication.
 ```
 
 #### Validation Rules:
-- `user_id`: required, exists in users table, user must have `is_trainer = true`
+- `user_id`: required, exists in users table, user must have active membership for the selected sport
 - `sport_id`: required, exists in active sports
 - `tier_id`: required, exists in active tiers
 - `experience_years`: required, integer, min: 0, max: 50
@@ -322,7 +322,7 @@ Updates an existing trainer profile. Trainers can only update their own profiles
 ### 6. Delete Trainer Profile
 **DELETE** `/trainer-profiles/{trainer_profile_id}`
 
-Deletes a trainer profile. Only admins and owners can delete profiles.
+Deletes a trainer profile. If the user has no other verified trainer profiles after deletion, their `is_trainer` status is set to `false`. Only admins and owners can delete profiles.
 
 #### Response:
 ```json
@@ -335,7 +335,7 @@ Deletes a trainer profile. Only admins and owners can delete profiles.
 ### 7. Verify Trainer Profile
 **POST** `/trainer-profiles/{trainer_profile_id}/verify`
 
-Verifies a trainer profile. Only admins and owners can verify profiles.
+Verifies a trainer profile and sets the user's `is_trainer` status to `true`. Only admins and owners can verify profiles.
 
 #### Response:
 ```json
@@ -353,7 +353,7 @@ Verifies a trainer profile. Only admins and owners can verify profiles.
 ### 8. Unverify Trainer Profile
 **POST** `/trainer-profiles/{trainer_profile_id}/unverify`
 
-Unverifies a trainer profile. Only admins and owners can unverify profiles.
+Unverifies a trainer profile. If the user has no other verified trainer profiles, their `is_trainer` status is set to `false`. Only admins and owners can unverify profiles.
 
 #### Response:
 ```json
