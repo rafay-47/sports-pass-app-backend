@@ -411,7 +411,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Trainer routes
-    Route::prefix('trainer')->middleware('role:trainer')->group(function () {
+    Route::prefix('trainer')->middleware('trainer')->group(function () {
         Route::get('/requests', [TrainerRequestController::class, 'incoming'])->name('trainer.requests');
         Route::patch('/requests/{trainerRequest}/accept', [TrainerRequestController::class, 'accept'])->name('trainer.requests.accept');
         Route::patch('/requests/{trainerRequest}/decline', [TrainerRequestController::class, 'decline'])->name('trainer.requests.decline');
