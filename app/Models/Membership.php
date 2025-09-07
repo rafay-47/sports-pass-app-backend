@@ -115,6 +115,14 @@ class Membership extends Model
     }
 
     /**
+     * Get available services for this membership (through sport).
+     */
+    public function availableServices()
+    {
+        return $this->sport->services()->active();
+    }
+
+    /**
      * Scope: Active memberships.
      */
     public function scopeActive($query)

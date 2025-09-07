@@ -206,7 +206,15 @@ class CheckInController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $checkIns
+            'data' => [
+                'check_ins' => $checkIns->items(),
+                'pagination' => [
+                    'current_page' => $checkIns->currentPage(),
+                    'last_page' => $checkIns->lastPage(),
+                    'per_page' => $checkIns->perPage(),
+                    'total' => $checkIns->total(),
+                ]
+            ]
         ]);
     }
 
@@ -226,7 +234,15 @@ class CheckInController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $checkIns
+            'data' => [
+                'check_ins' => $checkIns->items(),
+                'pagination' => [
+                    'current_page' => $checkIns->currentPage(),
+                    'last_page' => $checkIns->lastPage(),
+                    'per_page' => $checkIns->perPage(),
+                    'total' => $checkIns->total(),
+                ]
+            ]
         ]);
     }
 
@@ -246,7 +262,15 @@ class CheckInController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $checkIns
+            'data' => [
+                'check_ins' => $checkIns->items(),
+                'pagination' => [
+                    'current_page' => $checkIns->currentPage(),
+                    'last_page' => $checkIns->lastPage(),
+                    'per_page' => $checkIns->perPage(),
+                    'total' => $checkIns->total(),
+                ]
+            ]
         ]);
     }
 

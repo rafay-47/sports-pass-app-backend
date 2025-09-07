@@ -180,7 +180,15 @@ class EventRegistrationController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $registrations
+            'data' => [
+                'registrations' => $registrations->items(),
+                'pagination' => [
+                    'current_page' => $registrations->currentPage(),
+                    'last_page' => $registrations->lastPage(),
+                    'per_page' => $registrations->perPage(),
+                    'total' => $registrations->total(),
+                ]
+            ]
         ]);
     }
 
@@ -195,7 +203,15 @@ class EventRegistrationController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $registrations
+            'data' => [
+                'registrations' => $registrations->items(),
+                'pagination' => [
+                    'current_page' => $registrations->currentPage(),
+                    'last_page' => $registrations->lastPage(),
+                    'per_page' => $registrations->perPage(),
+                    'total' => $registrations->total(),
+                ]
+            ]
         ]);
     }
 

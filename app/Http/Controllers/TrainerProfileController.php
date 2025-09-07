@@ -74,6 +74,11 @@ class TrainerProfileController extends Controller
             $query->where('sport_id', $request->sport_id);
         }
 
+        // Filter by tier
+        if ($request->filled('tier_id')) {
+            $query->where('tier_id', $request->tier_id);
+        }
+
         // Filter by verification status
         if ($request->has('verified')) {
             $query->where('is_verified', $request->boolean('verified'));

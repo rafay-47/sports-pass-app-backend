@@ -39,7 +39,15 @@ class ClubImageController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $images
+            'data' => [
+                'images' => $images->items(),
+                'pagination' => [
+                    'current_page' => $images->currentPage(),
+                    'last_page' => $images->lastPage(),
+                    'per_page' => $images->perPage(),
+                    'total' => $images->total(),
+                ]
+            ]
         ]);
     }
 

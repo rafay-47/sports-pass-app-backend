@@ -1017,7 +1017,13 @@ class ClubController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => [
-                'clubs' => $clubs,
+                'clubs' => $clubs->items(),
+                'pagination' => [
+                    'current_page' => $clubs->currentPage(),
+                    'last_page' => $clubs->lastPage(),
+                    'per_page' => $clubs->perPage(),
+                    'total' => $clubs->total(),
+                ],
                 'filters_applied' => [
                     'active' => $request->has('active'),
                     'status' => $request->filled('status'),
@@ -1496,7 +1502,13 @@ class ClubController extends Controller
             'status' => 'success',
             'data' => [
                 'club' => $club->only(['id', 'name']),
-                'check_ins' => $checkIns
+                'check_ins' => $checkIns->items(),
+                'pagination' => [
+                    'current_page' => $checkIns->currentPage(),
+                    'last_page' => $checkIns->lastPage(),
+                    'per_page' => $checkIns->perPage(),
+                    'total' => $checkIns->total(),
+                ]
             ]
         ]);
     }
@@ -1506,7 +1518,7 @@ class ClubController extends Controller
      */
     public function getEvents(Request $request, Club $club): JsonResponse
     {
-        $query = $club->events()->with(['sport', 'registrations']);
+        $query = $club->events()->with(['sport']);
 
         // Filter by status
         if ($request->filled('status')) {
@@ -1533,7 +1545,13 @@ class ClubController extends Controller
             'status' => 'success',
             'data' => [
                 'club' => $club->only(['id', 'name']),
-                'events' => $events
+                'events' => $events->items(),
+                'pagination' => [
+                    'current_page' => $events->currentPage(),
+                    'last_page' => $events->lastPage(),
+                    'per_page' => $events->perPage(),
+                    'total' => $events->total(),
+                ]
             ]
         ]);
     }

@@ -18,7 +18,7 @@ class EventController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Event::with(['sport', 'registrations']);
+        $query = Event::with(['sport']);
 
         // Filter by sport
         if ($request->has('sport_id')) {
@@ -87,7 +87,7 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-        $event->load(['sport', 'registrations.user']);
+        $event->load(['sport']);
 
         return response()->json([
             'status' => 'success',
@@ -136,14 +136,21 @@ class EventController extends Controller
     public function getBySport(Sport $sport)
     {
         $events = $sport->events()
-            ->with('registrations')
             ->active()
             ->upcoming()
             ->paginate(15);
 
         return response()->json([
             'status' => 'success',
-            'data' => $events
+            'data' => [
+                'events' => $events->items(),
+                'pagination' => [
+                    'current_page' => $events->currentPage(),
+                    'last_page' => $events->lastPage(),
+                    'per_page' => $events->perPage(),
+                    'total' => $events->total(),
+                ]
+            ]
         ]);
     }
 
@@ -225,7 +232,15 @@ class EventController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $registrations
+            'data' => [
+                'registrations' => $registrations->items(),
+                'pagination' => [
+                    'current_page' => $registrations->currentPage(),
+                    'last_page' => $registrations->lastPage(),
+                    'per_page' => $registrations->perPage(),
+                    'total' => $registrations->total(),
+                ]
+            ]
         ]);
     }
 

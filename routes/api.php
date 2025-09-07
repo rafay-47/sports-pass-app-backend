@@ -8,6 +8,7 @@ use App\Http\Controllers\SportServiceController;
 use App\Http\Controllers\TierController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\TrainerProfileController;
+use App\Http\Controllers\TrainerRequestController;
 use App\Http\Controllers\TrainerCertificationController;
 use App\Http\Controllers\TrainerSpecialtyController;
 use App\Http\Controllers\TrainerAvailabilityController;
@@ -99,6 +100,7 @@ Route::prefix('clubs')->group(function () {
     Route::get('/{club}/statistics', [ClubController::class, 'statistics'])->name('clubs.statistics');
     Route::get('/{club}/qr-code', [ClubController::class, 'generateQrCode'])->name('clubs.qr-code');
 });
+
 
 // Public tier routes (read-only)
 Route::prefix('tiers')->group(function () {
@@ -388,6 +390,8 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Member's own memberships
         Route::get('/memberships', [MembershipController::class, 'myMemberships'])->name('member.memberships');
+        Route::get('/memberships/{membership}/services', [MembershipController::class, 'getServices'])->name('member.memberships.services');
+        Route::get('/memberships/{membership}/trainers', [MembershipController::class, 'getTrainers'])->name('member.memberships.trainers');
         
         // Member's own service purchases
         Route::get('/service-purchases', [ServicePurchaseController::class, 'myPurchases'])->name('member.service-purchases');
@@ -398,6 +402,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('member.notifications.mark-all-read');
         Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('member.notifications.mark-read');
         Route::patch('/notifications/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('member.notifications.mark-unread');
+        
+        // Member's trainer requests
+        Route::get('/trainer-requests', [TrainerRequestController::class, 'index'])->name('member.trainer-requests');
+        Route::post('/trainer-requests', [TrainerRequestController::class, 'store'])->name('member.trainer-requests.store');
+        Route::get('/trainer-requests/{trainerRequest}', [TrainerRequestController::class, 'show'])->name('member.trainer-requests.show');
+        Route::patch('/trainer-requests/{trainerRequest}/cancel', [TrainerRequestController::class, 'cancel'])->name('member.trainer-requests.cancel');
+    });
+
+    // Trainer routes
+    Route::prefix('trainer')->middleware('role:trainer')->group(function () {
+        Route::get('/requests', [TrainerRequestController::class, 'incoming'])->name('trainer.requests');
+        Route::patch('/requests/{trainerRequest}/accept', [TrainerRequestController::class, 'accept'])->name('trainer.requests.accept');
+        Route::patch('/requests/{trainerRequest}/decline', [TrainerRequestController::class, 'decline'])->name('trainer.requests.decline');
     });
 
     // Payment management routes
@@ -425,6 +442,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [MembershipController::class, 'store'])->name('memberships.store');
         Route::get('/statistics', [MembershipController::class, 'statistics'])->name('memberships.statistics');
         Route::get('/{membership}', [MembershipController::class, 'show'])->name('memberships.show');
+        Route::get('/{membership}/services', [MembershipController::class, 'getServices'])->name('memberships.services');
+        Route::get('/{membership}/trainers', [MembershipController::class, 'getTrainers'])->name('memberships.trainers');
         Route::put('/{membership}', [MembershipController::class, 'update'])->name('memberships.update');
         Route::delete('/{membership}', [MembershipController::class, 'destroy'])->name('memberships.destroy');
         

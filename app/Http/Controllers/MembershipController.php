@@ -6,6 +6,7 @@ use App\Models\Membership;
 use App\Models\User;
 use App\Models\Sport;
 use App\Models\Tier;
+use App\Models\TrainerProfile;
 use App\Http\Requests\StoreMembershipRequest;
 use App\Http\Requests\UpdateMembershipRequest;
 use Illuminate\Http\Request;
@@ -184,6 +185,123 @@ class MembershipController extends Controller
             'status' => 'success',
             'data' => [
                 'membership' => $membership
+            ]
+        ]);
+    }
+
+    /**
+     * Get available services for a membership.
+     */
+    public function getServices(Request $request, Membership $membership): JsonResponse
+    {
+        // Check if user owns this membership
+        if ($membership->user_id !== $request->user()->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized access to membership'
+            ], 403);
+        }
+
+        // Check if membership is active
+        if (!$membership->is_active) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Membership is not active'
+            ], 400);
+        }
+
+        $services = $membership->availableServices()
+            ->with('sport:id,name,display_name')
+            ->trainers() // Only show trainer services
+            ->orderBy('service_name')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'membership' => $membership->only(['id', 'membership_number', 'sport_id', 'tier_id']),
+                'services' => $services
+            ]
+        ]);
+    }
+
+    /**
+     * Get available trainers for a membership (filtered by sport and tier).
+     */
+    public function getTrainers(Request $request, Membership $membership): JsonResponse
+    {
+        // Check if user owns this membership
+        if ($membership->user_id !== $request->user()->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized access to membership'
+            ], 403);
+        }
+
+        // Check if membership is active
+        if (!$membership->is_active) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Membership is not active'
+            ], 400);
+        }
+
+        $query = TrainerProfile::with([
+                'user:id,name,email,phone,gender',
+                'sport:id,name,display_name,icon,color',
+                'tier:id,tier_name,display_name,price',
+                'specialties' => function ($query) {
+                    $query->orderBy('specialty', 'asc');
+                },
+                'certifications' => function ($query) {
+                    $query->where('is_verified', true)
+                          ->orderBy('certification_name', 'asc');
+                },
+                'clubs' => function ($query) {
+                    $query->select('clubs.id', 'clubs.name', 'clubs.address', 'clubs.city')
+                          ->orderBy('trainer_clubs.is_primary', 'desc');
+                }
+            ])
+            ->where('sport_id', $membership->sport_id)
+            ->where('tier_id', $membership->tier_id)
+            ->verified()
+            ->available()
+            ->active();
+
+        // Filter by rating
+        if ($request->filled('min_rating')) {
+            $query->byRating($request->min_rating);
+        }
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', function ($userQuery) use ($search) {
+                    $userQuery->where('name', 'ILIKE', "%{$search}%");
+                })
+                ->orWhere('bio', 'ILIKE', "%{$search}%");
+            });
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'rating');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $query->orderBy($sortBy, $sortOrder);
+
+        $trainers = $query->paginate(15);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'membership' => $membership->only(['id', 'membership_number', 'sport_id', 'tier_id']),
+                'trainers' => $trainers->items(),
+                'pagination' => [
+                    'current_page' => $trainers->currentPage(),
+                    'last_page' => $trainers->lastPage(),
+                    'per_page' => $trainers->perPage(),
+                    'total' => $trainers->total(),
+                ]
             ]
         ]);
     }
