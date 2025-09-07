@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreTrainerRequestRequest;
 use App\Http\Requests\UpdateTrainerRequestRequest;
-use App\Http\Resources\TrainerRequestResource;
 use App\Models\TrainerRequest;
 use App\Models\TrainerProfile;
 use App\Models\User;
@@ -30,7 +29,18 @@ class TrainerRequestController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
-        return TrainerRequestResource::collection($requests);
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'trainer_requests' => $requests->items(),
+                'pagination' => [
+                    'current_page' => $requests->currentPage(),
+                    'last_page' => $requests->lastPage(),
+                    'per_page' => $requests->perPage(),
+                    'total' => $requests->total(),
+                ]
+            ]
+        ]);
     }
 
     /**
@@ -42,7 +52,10 @@ class TrainerRequestController extends Controller
         $trainerProfile = TrainerProfile::where('user_id', $user->id)->first();
 
         if (!$trainerProfile) {
-            return response()->json(['message' => 'Trainer profile not found'], 404);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Trainer profile not found'
+            ], 404);
         }
 
         $query = TrainerRequest::where('status', 'pending')
@@ -62,7 +75,18 @@ class TrainerRequestController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
-        return TrainerRequestResource::collection($requests);
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'trainer_requests' => $requests->items(),
+                'pagination' => [
+                    'current_page' => $requests->currentPage(),
+                    'last_page' => $requests->lastPage(),
+                    'per_page' => $requests->perPage(),
+                    'total' => $requests->total(),
+                ]
+            ]
+        ]);
     }
 
     /**
@@ -76,16 +100,25 @@ class TrainerRequestController extends Controller
         // Ensure the membership belongs to the user
         $membership = $user->memberships()->find($validated['membership_id']);
         if (!$membership) {
-            return response()->json(['message' => 'Membership not found'], 404);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Membership not found'
+            ], 404);
         }
 
         // Validate trainer if specific request
         if ($validated['request_type'] === 'specific_trainer') {
             $trainer = TrainerProfile::find($validated['trainer_profile_id']);
             if (!$trainer || $trainer->sport_id !== $membership->sport_id) {
-                return response()->json(['message' => 'Trainer sport does not match membership sport'], 400);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Trainer sport does not match membership sport'
+                ], 400);
             } else if($trainer->tier_id !== $membership->tier_id) {
-                return response()->json(['message' => 'Trainer tier does not match membership tier'], 400);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Trainer tier does not match membership tier'
+                ], 400);
             }
             
         } 
@@ -104,7 +137,11 @@ class TrainerRequestController extends Controller
             'expires_at' => now()->addDays(7), // Default 7 days
         ]);
 
-        return new TrainerRequestResource($trainerRequest->load(['trainerProfile.user', 'service', 'club']));
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Trainer request created successfully',
+            'data' => $trainerRequest->load(['trainerProfile.user', 'service', 'club'])
+        ], 201);
     }
 
     /**
@@ -117,11 +154,17 @@ class TrainerRequestController extends Controller
         if ($trainerRequest->user_id !== $user->id) {
             $trainerProfile = TrainerProfile::where('user_id', $user->id)->first();
             if (!$trainerProfile || ($trainerRequest->request_type === 'specific_trainer' && $trainerRequest->trainer_profile_id !== $trainerProfile->id)) {
-                return response()->json(['message' => 'Unauthorized'], 403);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized'
+                ], 403);
             }
         }
 
-        return new TrainerRequestResource($trainerRequest->load(['user', 'membership', 'trainerProfile.user', 'acceptedByTrainer.user', 'service', 'club']));
+        return response()->json([
+            'status' => 'success',
+            'data' => $trainerRequest->load(['user', 'membership', 'trainerProfile.user', 'acceptedByTrainer.user', 'service', 'club'])
+        ]);
     }
 
     /**
@@ -133,18 +176,27 @@ class TrainerRequestController extends Controller
         $trainerProfile = TrainerProfile::where('user_id', $user->id)->first();
 
         if (!$trainerProfile) {
-            return response()->json(['message' => 'Trainer profile not found'], 404);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Trainer profile not found'
+            ], 404);
         }
 
         // Check if the trainer can accept this request
         if ($trainerRequest->request_type === 'specific_trainer' && $trainerRequest->trainer_profile_id !== $trainerProfile->id) {
-            return response()->json(['message' => 'You cannot accept this request'], 403);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You cannot accept this request'
+            ], 403);
         }
 
         // For open requests, validate that trainer matches the required sport and tier
         if ($trainerRequest->request_type === 'open_request') {
             if ($trainerProfile->sport_id !== $trainerRequest->sport_id || $trainerProfile->tier_id !== $trainerRequest->tier_id) {
-                return response()->json(['message' => 'You are not qualified to accept this request'], 403);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'You are not qualified to accept this request'
+                ], 403);
             }
         }
 
@@ -165,10 +217,17 @@ class TrainerRequestController extends Controller
                 ]);
             });
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 400);
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
         }
 
-        return new TrainerRequestResource($trainerRequest->load(['user', 'membership', 'trainerProfile.user', 'acceptedByTrainer.user', 'service', 'club']));
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Trainer request accepted successfully',
+            'data' => $trainerRequest->load(['user', 'membership', 'trainerProfile.user', 'acceptedByTrainer.user', 'service', 'club'])
+        ]);
     }
 
     /**
@@ -180,23 +239,36 @@ class TrainerRequestController extends Controller
         $trainerProfile = TrainerProfile::where('user_id', $user->id)->first();
 
         if (!$trainerProfile) {
-            return response()->json(['message' => 'Trainer profile not found'], 404);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Trainer profile not found'
+            ], 404);
         }
 
         // Check if the trainer can decline this request
         if ($trainerRequest->request_type === 'specific_trainer' && $trainerRequest->trainer_profile_id !== $trainerProfile->id) {
-            return response()->json(['message' => 'You cannot decline this request'], 403);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You cannot decline this request'
+            ], 403);
         }
 
         if ($trainerRequest->status !== 'pending') {
-            return response()->json(['message' => 'Request is not pending'], 400);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Request is not pending'
+            ], 400);
         }
 
         $trainerRequest->update([
             'status' => 'declined',
         ]);
 
-        return new TrainerRequestResource($trainerRequest->load(['user', 'membership', 'trainerProfile.user', 'acceptedByTrainer.user', 'service', 'club']));
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Trainer request declined successfully',
+            'data' => $trainerRequest->load(['user', 'membership', 'trainerProfile.user', 'acceptedByTrainer.user', 'service', 'club'])
+        ]);
     }
 
     /**
@@ -206,17 +278,27 @@ class TrainerRequestController extends Controller
     {
         $user = Auth::user();
         if ($trainerRequest->user_id !== $user->id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized'
+            ], 403);
         }
 
         if ($trainerRequest->status !== 'pending') {
-            return response()->json(['message' => 'Cannot cancel a non-pending request'], 400);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Cannot cancel a non-pending request'
+            ], 400);
         }
 
         $trainerRequest->update([
             'status' => 'cancelled',
         ]);
 
-        return new TrainerRequestResource($trainerRequest);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Trainer request cancelled successfully',
+            'data' => $trainerRequest
+        ]);
     }
 }
