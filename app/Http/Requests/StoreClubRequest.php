@@ -33,7 +33,11 @@ class StoreClubRequest extends FormRequest
             'category' => 'required|in:male,female,mixed',
             'timings' => 'nullable|array',
             'pricing' => 'nullable|array',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'amenities' => 'nullable|array',
+            'amenities.*' => 'uuid|exists:amenities,id',
+            'facilities' => 'nullable|array',
+            'facilities.*' => 'uuid|exists:facilities,id'
         ];
     }
 
@@ -59,6 +63,12 @@ class StoreClubRequest extends FormRequest
             'price_range.max' => 'Price range cannot exceed 20 characters',
             'category.required' => 'Category is required',
             'category.in' => 'Category must be one of: male, female, mixed',
+            'amenities.array' => 'Amenities must be an array',
+            'amenities.*.uuid' => 'Each amenity ID must be a valid UUID',
+            'amenities.*.exists' => 'Selected amenity does not exist',
+            'facilities.array' => 'Facilities must be an array',
+            'facilities.*.uuid' => 'Each facility ID must be a valid UUID',
+            'facilities.*.exists' => 'Selected facility does not exist',
         ];
     }
 }

@@ -104,6 +104,16 @@ class ClubController extends Controller
             $club->verification_status = 'pending';
             $club->save();
 
+            // Attach amenities if provided
+            if ($request->has('amenities') && !empty($request->amenities)) {
+                $club->amenities()->attach($request->amenities);
+            }
+
+            // Attach facilities if provided
+            if ($request->has('facilities') && !empty($request->facilities)) {
+                $club->facilities()->attach($request->facilities);
+            }
+
             DB::commit();
 
             return response()->json([

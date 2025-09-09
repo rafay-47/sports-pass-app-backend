@@ -420,28 +420,55 @@ This document provides comprehensive API documentation for the Clubs management 
 ```json
 {
   "name": "Elite Fitness Center",
+  "type": "Fitness Center",
   "description": "Premium fitness facility with state-of-the-art equipment",
   "address": "123 Main Street",
   "city": "New York",
-  "state": "NY",
-  "country": "USA",
-  "postal_code": "10001",
-  "phone": "+1-555-0123",
-  "email": "info@elitefitness.com",
-  "website": "https://elitefitness.com",
   "latitude": 40.7128,
   "longitude": -74.0060,
-  "operating_hours": {
+  "phone": "+1-555-0123",
+  "email": "info@elitefitness.com",
+  "price_range": "$50-100",
+  "category": "mixed",
+  "timings": {
     "monday": {"open": "06:00", "close": "22:00"},
-    "tuesday": {"open": "06:00", "close": "22:00"},
-    "wednesday": {"open": "06:00", "close": "22:00"},
-    "thursday": {"open": "06:00", "close": "22:00"},
-    "friday": {"open": "06:00", "close": "22:00"},
-    "saturday": {"open": "08:00", "close": "20:00"},
-    "sunday": {"open": "10:00", "close": "18:00"}
-  }
+    "tuesday": {"open": "06:00", "close": "22:00"}
+  },
+  "pricing": {
+    "monthly": 99.99,
+    "yearly": 999.99
+  },
+  "is_active": true,
+  "amenities": [
+    "uuid-of-amenity-1",
+    "uuid-of-amenity-2"
+  ],
+  "facilities": [
+    "uuid-of-facility-1",
+    "uuid-of-facility-2"
+  ]
 }
 ```
+
+**Required Fields:**
+- `name`: Club name (string, max 200 characters)
+- `type`: Club type (string, max 100 characters)
+- `address`: Club address (string)
+- `latitude`: Latitude coordinate (numeric, between -90 and 90)
+- `longitude`: Longitude coordinate (numeric, between -180 and 180)
+- `category`: Club category (male, female, mixed)
+
+**Optional Fields:**
+- `description`: Club description (string)
+- `city`: City name (string, max 100 characters)
+- `phone`: Contact phone number (string, max 20 characters)
+- `email`: Contact email (valid email, max 255 characters)
+- `price_range`: Price range description (string, max 20 characters)
+- `timings`: Operating hours (object with day keys)
+- `pricing`: Pricing information (object)
+- `is_active`: Whether club is active (boolean, default false)
+- `amenities`: Array of amenity UUIDs to attach to the club (array of valid UUIDs)
+- `facilities`: Array of facility UUIDs to attach to the club (array of valid UUIDs)
 
 **Response:** Same as get club details
 
