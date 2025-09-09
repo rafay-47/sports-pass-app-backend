@@ -91,7 +91,6 @@ Route::prefix('clubs')->group(function () {
     Route::get('/nearby', [ClubController::class, 'nearby'])->name('clubs.nearby');
     Route::get('/filter', [ClubController::class, 'filter'])->name('clubs.filter');
     Route::get('/{club}', [ClubController::class, 'show'])->name('clubs.show');
-    Route::get('/{club}/sports', [ClubController::class, 'getSports'])->name('clubs.sports');
     Route::get('/{club}/amenities', [ClubController::class, 'getAmenities'])->name('clubs.amenities');
     Route::get('/{club}/facilities', [ClubController::class, 'getFacilities'])->name('clubs.facilities');
     Route::get('/{club}/images', [ClubController::class, 'getImages'])->name('clubs.images');
@@ -161,8 +160,6 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{club}', [ClubController::class, 'update'])->name('clubs.update');
             Route::delete('/{club}', [ClubController::class, 'destroy'])->name('clubs.destroy');
             Route::post('/{club}/toggle-status', [ClubController::class, 'toggleStatus'])->name('clubs.toggle-status');
-            Route::post('/{club}/sports', [ClubController::class, 'addSports'])->name('clubs.add-sports');
-            Route::delete('/{club}/sports/{sport}', [ClubController::class, 'removeSport'])->name('clubs.remove-sport');
             Route::post('/{club}/amenities', [ClubController::class, 'addAmenities'])->name('clubs.add-amenities');
             Route::delete('/{club}/amenities/{amenity}', [ClubController::class, 'removeAmenity'])->name('clubs.remove-amenity');
             Route::post('/{club}/facilities', [ClubController::class, 'addFacilities'])->name('clubs.add-facilities');

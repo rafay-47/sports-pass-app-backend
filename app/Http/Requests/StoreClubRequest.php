@@ -21,7 +21,7 @@ class StoreClubRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:200',
-            'type' => 'required|string|max:100',
+            'sport_id' => 'required|uuid|exists:sports,id',
             'description' => 'nullable|string',
             'address' => 'required|string',
             'city' => 'nullable|string|max:100',
@@ -47,8 +47,9 @@ class StoreClubRequest extends FormRequest
         return [
             'name.required' => 'Club name is required',
             'name.max' => 'Club name cannot exceed 200 characters',
-            'type.required' => 'Club type is required',
-            'type.max' => 'Club type cannot exceed 100 characters',
+            'sport_id.required' => 'Sport type is required',
+            'sport_id.uuid' => 'Sport ID must be a valid UUID',
+            'sport_id.exists' => 'Selected sport does not exist',
             'address.required' => 'Club address is required',
             'city.max' => 'City cannot exceed 100 characters',
             'latitude.required' => 'Latitude is required',

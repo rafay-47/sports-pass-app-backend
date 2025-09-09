@@ -24,7 +24,7 @@ class ClubController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Club::with(['owner', 'sports', 'amenities', 'facilities', 'primaryImage']);
+        $query = Club::with(['owner', 'sport', 'amenities', 'facilities', 'primaryImage']);
 
         // Filter by active status
         if ($request->has('active')) {
@@ -120,7 +120,7 @@ class ClubController extends Controller
                 'status' => 'success',
                 'message' => 'Club created successfully',
                 'data' => [
-                    'club' => $club->load(['owner', 'sports', 'amenities', 'facilities'])
+                    'club' => $club->load(['owner', 'sport', 'amenities', 'facilities'])
                 ]
             ], 201);
 
@@ -141,7 +141,7 @@ class ClubController extends Controller
     {
         $club->load([
             'owner',
-            'sports',
+            'sport',
             'amenities',
             'facilities',
             'images',
@@ -184,7 +184,7 @@ class ClubController extends Controller
                 'status' => 'success',
                 'message' => 'Club updated successfully',
                 'data' => [
-                    'club' => $club->fresh(['owner', 'sports', 'amenities', 'facilities'])
+                    'club' => $club->fresh(['owner', 'sport', 'amenities', 'facilities'])
                 ]
             ]);
 
@@ -233,7 +233,7 @@ class ClubController extends Controller
     public function myClubs(Request $request): JsonResponse
     {
         $clubs = Club::ownedBy($request->user()->id)
-            ->with(['sports', 'amenities', 'facilities', 'primaryImage'])
+            ->with(['sport', 'amenities', 'facilities', 'primaryImage'])
             ->orderBy('name')
             ->paginate(15);
 
@@ -361,96 +361,6 @@ class ClubController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to update verification status',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Add sports to a club.
-     */
-    public function addSports(Request $request, Club $club): JsonResponse
-    {
-        if ($request->user()->id !== $club->owner_id && $request->user()->user_role !== 'admin') {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'You can only manage your own clubs'
-            ], 403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'sport_ids' => 'required|array',
-            'sport_ids.*' => 'uuid|exists:sports,id'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $club->sports()->syncWithoutDetaching($request->sport_ids);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Sports added to club successfully',
-                'data' => [
-                    'club' => $club->fresh(['sports'])
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to add sports',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Remove sports from a club.
-     */
-    public function removeSports(Request $request, Club $club): JsonResponse
-    {
-        if ($request->user()->id !== $club->owner_id && $request->user()->user_role !== 'admin') {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'You can only manage your own clubs'
-            ], 403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'sport_ids' => 'required|array',
-            'sport_ids.*' => 'uuid|exists:sports,id'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $club->sports()->detach($request->sport_ids);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Sports removed from club successfully',
-                'data' => [
-                    'club' => $club->fresh(['sports'])
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to remove sports',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -743,7 +653,7 @@ class ClubController extends Controller
 
         $clubs = Club::active()
             ->withinRadius($request->latitude, $request->longitude, $radius)
-            ->with(['sports', 'amenities', 'facilities', 'primaryImage'])
+            ->with(['sport', 'amenities', 'facilities', 'primaryImage'])
             ->get();
 
         return response()->json([
@@ -788,7 +698,7 @@ class ClubController extends Controller
             'status' => 'success',
             'message' => 'Club verified successfully',
             'data' => [
-                'club' => $club->fresh(['owner', 'sports', 'amenities', 'facilities'])
+                'club' => $club->fresh(['owner', 'sport', 'amenities', 'facilities'])
             ]
         ]);
     }
@@ -834,7 +744,7 @@ class ClubController extends Controller
             'status' => 'success',
             'message' => 'Club unverified successfully',
             'data' => [
-                'club' => $club->fresh(['owner', 'sports', 'amenities', 'facilities'])
+                'club' => $club->fresh(['owner', 'sport', 'amenities', 'facilities'])
             ]
         ]);
     }
@@ -895,7 +805,7 @@ class ClubController extends Controller
             ], 403);
         }
 
-        $query = Club::with(['owner', 'sports', 'amenities', 'facilities', 'primaryImage']);
+        $query = Club::with(['owner', 'sport', 'amenities', 'facilities', 'primaryImage']);
 
         // Filter by verification status
         if ($request->filled('verification_status')) {
@@ -930,7 +840,7 @@ class ClubController extends Controller
      */
     public function filter(Request $request): JsonResponse
     {
-        $query = Club::with(['owner', 'sports', 'amenities', 'facilities', 'primaryImage']);
+        $query = Club::with(['owner', 'sport', 'amenities', 'facilities', 'primaryImage']);
 
         // Filter by active status
         if ($request->has('active')) {
@@ -1073,7 +983,7 @@ class ClubController extends Controller
         $limit = $request->get('limit', 20);
 
         $clubs = Club::search($query)
-            ->with(['owner', 'sports', 'amenities', 'facilities', 'primaryImage'])
+            ->with(['owner', 'sport', 'amenities', 'facilities', 'primaryImage'])
             ->where('is_active', true)
             ->limit($limit)
             ->get();
@@ -1086,65 +996,6 @@ class ClubController extends Controller
                 'total_results' => $clubs->count()
             ]
         ]);
-    }
-
-    /**
-     * Get sports associated with a club.
-     */
-    public function getSports(Club $club): JsonResponse
-    {
-        $sports = $club->sports()
-            ->with(['tiers' => function ($query) {
-                $query->active()->available();
-            }])
-            ->get();
-
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'club' => $club->only(['id', 'name']),
-                'sports' => $sports
-            ]
-        ]);
-    }
-
-    /**
-     * Remove a specific sport from a club.
-     */
-    public function removeSport(Request $request, Club $club, Sport $sport): JsonResponse
-    {
-        if ($request->user()->id !== $club->owner_id && $request->user()->user_role !== 'admin') {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'You can only manage your own clubs'
-            ], 403);
-        }
-
-        if (!$club->sports()->where('sport_id', $sport->id)->exists()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Sport is not associated with this club'
-            ], 404);
-        }
-
-        try {
-            $club->sports()->detach($sport->id);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Sport removed from club successfully',
-                'data' => [
-                    'club' => $club->fresh(['sports'])
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to remove sport',
-                'error' => $e->getMessage()
-            ], 500);
-        }
     }
 
     /**

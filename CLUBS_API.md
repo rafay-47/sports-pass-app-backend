@@ -124,6 +124,16 @@ This document provides comprehensive API documentation for the Clubs management 
   "data": {
     "id": "uuid",
     "name": "Elite Fitness Center",
+    "sport_id": "uuid",
+    "sport": {
+      "id": "uuid",
+      "name": "Basketball",
+      "display_name": "Basketball",
+      "icon": "basketball-icon.png",
+      "color": "#FF6B35",
+      "description": "Basketball sport facilities",
+      "is_active": true
+    },
     "description": "Premium fitness facility with state-of-the-art equipment",
     "address": "123 Main Street",
     "city": "New York",
@@ -151,17 +161,15 @@ This document provides comprehensive API documentation for the Clubs management 
     "owner_id": "uuid",
     "created_at": "2024-01-15T10:00:00Z",
     "updated_at": "2024-01-15T10:00:00Z",
-    "sports": [
-      {
-        "id": "uuid",
-        "name": "Basketball",
-        "pivot": {
-          "club_id": "uuid",
-          "sport_id": "uuid",
-          "created_at": "2024-01-15T10:00:00Z"
-        }
-      }
-    ],
+    "sport": {
+      "id": "uuid",
+      "name": "Basketball",
+      "display_name": "Basketball",
+      "icon": "basketball-icon.png",
+      "color": "#FF6B35",
+      "description": "Basketball sport facilities",
+      "is_active": true
+    },
     "amenities": [
       {
         "id": "uuid",
@@ -195,30 +203,6 @@ This document provides comprehensive API documentation for the Clubs management 
       }
     ]
   }
-}
-```
-
-### Get Club Sports
-**GET** `/api/clubs/{club}/sports`
-
-**Response:**
-```json
-{
-  "status": "success",
-  "data": [
-    {
-      "id": "uuid",
-      "name": "Basketball",
-      "description": "Basketball sport",
-      "icon": "basketball-icon.png",
-      "is_active": true,
-      "pivot": {
-        "club_id": "uuid",
-        "sport_id": "uuid",
-        "created_at": "2024-01-15T10:00:00Z"
-      }
-    }
-  ]
 }
 ```
 
@@ -419,7 +403,7 @@ This document provides comprehensive API documentation for the Clubs management 
 ```json
 {
   "name": "Elite Fitness Center",
-  "type": "Fitness Center",
+  "sport_id": "uuid-of-sport",
   "description": "Premium fitness facility with state-of-the-art equipment",
   "address": "123 Main Street",
   "city": "New York",
@@ -446,7 +430,7 @@ This document provides comprehensive API documentation for the Clubs management 
 
 **Required Fields:**
 - `name`: Club name (string, max 200 characters)
-- `type`: Club type (string, max 100 characters)
+- `sport_id`: Sport type UUID (must exist in sports table)
 - `address`: Club address (string)
 - `latitude`: Latitude coordinate (numeric, between -90 and 90)
 - `longitude`: Longitude coordinate (numeric, between -180 and 180)
@@ -497,48 +481,6 @@ This document provides comprehensive API documentation for the Clubs management 
       "is_active": true
     }
   }
-}
-```
-
-### Add Sports to Club
-**POST** `/api/clubs/{club}/sports`
-
-**Request Body:**
-```json
-{
-  "sport_ids": ["uuid1", "uuid2", "uuid3"]
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "message": "Sports added to club successfully",
-  "data": {
-    "added_sports": [
-      {
-        "id": "uuid",
-        "name": "Basketball",
-        "pivot": {
-          "club_id": "uuid",
-          "sport_id": "uuid",
-          "created_at": "2024-01-15T10:00:00Z"
-        }
-      }
-    ]
-  }
-}
-```
-
-### Remove Sport from Club
-**DELETE** `/api/clubs/{club}/sports/{sport}`
-
-**Response:**
-```json
-{
-  "status": "success",
-  "message": "Sport removed from club successfully"
 }
 ```
 

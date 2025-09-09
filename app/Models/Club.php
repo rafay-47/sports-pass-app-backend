@@ -20,7 +20,7 @@ class Club extends Model
     protected $fillable = [
         'owner_id',
         'name',
-        'type',
+        'sport_id',
         'description',
         'address',
         'city',
@@ -47,6 +47,7 @@ class Club extends Model
         'updated_at' => 'datetime',
         'id' => 'string',
         'owner_id' => 'string',
+        'sport_id' => 'string',
     ];
 
     public function getRouteKeyName()
@@ -60,6 +61,14 @@ class Club extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /**
+     * Get the primary sport type of this club.
+     */
+    public function sport(): BelongsTo
+    {
+        return $this->belongsTo(Sport::class, 'sport_id');
     }
 
     /**
