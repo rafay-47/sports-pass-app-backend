@@ -29,13 +29,11 @@ class Club extends Model
         'phone',
         'email',
         'rating',
-        'price_range',
         'category',
         'qr_code',
         'status',
         'verification_status',
         'timings',
-        'pricing',
         'is_active',
     ];
 
@@ -44,7 +42,6 @@ class Club extends Model
         'longitude' => 'decimal:8',
         'rating' => 'decimal:2',
         'timings' => 'array',
-        'pricing' => 'array',
         'is_active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

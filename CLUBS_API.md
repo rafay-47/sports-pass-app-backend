@@ -107,7 +107,6 @@ This document provides comprehensive API documentation for the Clubs management 
 - `sport_ids` (optional): Comma-separated sport UUIDs
 - `amenity_ids` (optional): Comma-separated amenity UUIDs
 - `facility_ids` (optional): Comma-separated facility UUIDs
-- `price_range` (optional): Price range (budget, moderate, premium)
 - `rating_min` (optional): Minimum rating (1-5)
 - `has_parking` (optional): Has parking (true/false)
 - `has_locker_room` (optional): Has locker room (true/false)
@@ -428,15 +427,10 @@ This document provides comprehensive API documentation for the Clubs management 
   "longitude": -74.0060,
   "phone": "+1-555-0123",
   "email": "info@elitefitness.com",
-  "price_range": "$50-100",
   "category": "mixed",
   "timings": {
     "monday": {"open": "06:00", "close": "22:00"},
     "tuesday": {"open": "06:00", "close": "22:00"}
-  },
-  "pricing": {
-    "monthly": 99.99,
-    "yearly": 999.99
   },
   "is_active": true,
   "amenities": [
@@ -463,9 +457,7 @@ This document provides comprehensive API documentation for the Clubs management 
 - `city`: City name (string, max 100 characters)
 - `phone`: Contact phone number (string, max 20 characters)
 - `email`: Contact email (valid email, max 255 characters)
-- `price_range`: Price range description (string, max 20 characters)
 - `timings`: Operating hours (object with day keys)
-- `pricing`: Pricing information (object)
 - `is_active`: Whether club is active (boolean, default false)
 - `amenities`: Array of amenity UUIDs to attach to the club (array of valid UUIDs)
 - `facilities`: Array of facility UUIDs to attach to the club (array of valid UUIDs)
