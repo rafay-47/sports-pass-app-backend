@@ -5,6 +5,7 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\User;
 use App\Models\Club;
+use App\Models\Sport;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Club>
@@ -19,7 +20,6 @@ class ClubFactory extends Factory
     public function definition(): array
     {
         $categories = ['male', 'female', 'mixed'];
-        $types = ['Gym', 'Sports Club', 'Fitness Center', 'Recreation Center', 'Sports Academy'];
         $priceRanges = ['$', '$$', '$$$', '$$$$'];
 
         // Generate realistic timings
@@ -34,23 +34,22 @@ class ClubFactory extends Factory
             ];
         }
 
-        // Generate pricing
-        $pricing = [
-            'basic' => $this->faker->numberBetween(500, 2000),
-            'standard' => $this->faker->numberBetween(2000, 5000),
-            'premium' => $this->faker->numberBetween(5000, 10000)
-        ];
-
         // Get a random owner (trainer or admin)
         $owner = User::whereIn('user_role', ['admin', 'trainer'])->inRandomOrder()->first();
         if (!$owner) {
             $owner = User::factory()->create(['user_role' => 'admin']);
         }
 
+        // Get a random sport
+        $sport = \App\Models\Sport::inRandomOrder()->first();
+        if (!$sport) {
+            $sport = \App\Models\Sport::factory()->create();
+        }
+
         return [
             'owner_id' => $owner->id,
             'name' => $this->faker->company() . ' ' . $this->faker->randomElement(['Sports Club', 'Fitness Center', 'Gym', 'Arena']),
-            'type' => $this->faker->randomElement($types),
+            'sport_id' => $sport->id,
             'description' => $this->faker->paragraph(3),
             'address' => $this->faker->address(),
             'city' => $this->faker->city(),
@@ -59,13 +58,11 @@ class ClubFactory extends Factory
             'phone' => $this->faker->phoneNumber(),
             'email' => $this->faker->email(),
             'rating' => $this->faker->randomFloat(1, 0, 5),
-            'price_range' => $this->faker->randomElement($priceRanges),
             'category' => $this->faker->randomElement($categories),
             'qr_code' => $this->generateUniqueQrCode(),
             'status' => $this->faker->randomElement(['active', 'pending', 'suspended']),
             'verification_status' => $this->faker->randomElement(['pending', 'verified', 'rejected']),
             'timings' => $timings,
-            'pricing' => $pricing,
             'is_active' => $this->faker->boolean(90),
         ];
     }
