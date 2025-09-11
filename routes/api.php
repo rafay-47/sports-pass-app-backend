@@ -268,9 +268,12 @@ Route::middleware('auth:sanctum')->group(function () {
             ]);
         })->name('trainer.dashboard');
         
-        // Trainer's own profile
-        Route::get('/profile', [TrainerProfileController::class, 'myProfile'])->name('trainer.profile');
         Route::put('/profile/toggle-availability', [TrainerProfileController::class, 'toggleAvailability'])->name('trainer.toggle-availability');
+    });
+    
+    // Trainer profile routes (any authenticated user can access their own profile)
+    Route::prefix('trainer')->group(function () {
+        Route::get('/profile', [TrainerProfileController::class, 'myProfile'])->name('trainer.profile');
     });
     
     // Trainer Profile management routes
