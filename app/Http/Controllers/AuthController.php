@@ -525,11 +525,9 @@ class AuthController extends Controller
     {
         // Get trainer availability status if user has a trainer profile
         $trainerAvailabilityStatus = null;
-        if ($user->is_trainer) {
-            $trainerProfile = TrainerProfile::where('user_id', $user->id)->first();
-            if ($trainerProfile) {
-                $trainerAvailabilityStatus = $trainerProfile->is_available;
-            }
+        $trainerProfile = TrainerProfile::where('user_id', $user->id)->first();
+        if ($trainerProfile) {
+            $trainerAvailabilityStatus = $trainerProfile->availability_status;
         }
 
         return [
