@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\TrainerProfile;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -522,6 +523,15 @@ class AuthController extends Controller
      */
     private function formatUserResponse(User $user): array
     {
+        // Get trainer availability status if user has a trainer profile
+        $trainerAvailabilityStatus = null;
+        if ($user->is_trainer) {
+            $trainerProfile = TrainerProfile::where('user_id', $user->id)->first();
+            if ($trainerProfile) {
+                $trainerAvailabilityStatus = $trainerProfile->is_available;
+            }
+        }
+
         return [
             'id' => $user->id,
             'name' => $user->name,
@@ -536,6 +546,7 @@ class AuthController extends Controller
             'is_active' => $user->is_active,
             'join_date' => $user->join_date,
             'last_login' => $user->last_login,
+            'trainer_availability_status' => $trainerAvailabilityStatus,
             'created_at' => $user->created_at,
             'updated_at' => $user->updated_at,
         ];
