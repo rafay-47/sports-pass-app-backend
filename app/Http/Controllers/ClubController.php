@@ -26,11 +26,6 @@ class ClubController extends Controller
     {
         $query = Club::with(['owner', 'sport', 'amenities', 'facilities', 'primaryImage']);
 
-        // If user is authenticated, filter by their ownership unless explicitly requesting all clubs
-        if ($request->user() && !$request->has('all_clubs')) {
-            $query->ownedBy($request->user()->id);
-        }
-
         // Filter by active status
         if ($request->has('active')) {
             $query->where('is_active', $request->boolean('active'));
@@ -67,7 +62,7 @@ class ClubController extends Controller
             $query->withinRadius($request->latitude, $request->longitude, $radius);
         }
 
-        // Filter by owner (overrides automatic ownership filter)
+        // Filter by owner
         if ($request->filled('owner_id')) {
             $query->ownedBy($request->owner_id);
         }

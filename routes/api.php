@@ -154,6 +154,9 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Club management routes
     Route::prefix('clubs')->group(function () {
+        // Authenticated user routes (get their own clubs)
+        Route::get('/my-clubs', [ClubController::class, 'myClubs'])->name('clubs.my-clubs');
+
         // Club owner and admin routes
         Route::middleware('role:owner,admin')->group(function () {
             Route::post('/', [ClubController::class, 'store'])->name('clubs.store');
