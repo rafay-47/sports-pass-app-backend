@@ -90,14 +90,15 @@ Route::prefix('clubs')->group(function () {
     Route::get('/search', [ClubController::class, 'search'])->name('clubs.search');
     Route::get('/nearby', [ClubController::class, 'nearby'])->name('clubs.nearby');
     Route::get('/filter', [ClubController::class, 'filter'])->name('clubs.filter');
-    Route::get('/{club}', [ClubController::class, 'show'])->name('clubs.show');
-    Route::get('/{club}/amenities', [ClubController::class, 'getAmenities'])->name('clubs.amenities');
-    Route::get('/{club}/facilities', [ClubController::class, 'getFacilities'])->name('clubs.facilities');
-    Route::get('/{club}/images', [ClubController::class, 'getImages'])->name('clubs.images');
-    Route::get('/{club}/check-ins', [ClubController::class, 'getCheckIns'])->name('clubs.check-ins');
-    Route::get('/{club}/events', [ClubController::class, 'getEvents'])->name('clubs.events');
-    Route::get('/{club}/statistics', [ClubController::class, 'statistics'])->name('clubs.statistics');
-    Route::get('/{club}/qr-code', [ClubController::class, 'generateQrCode'])->name('clubs.qr-code');
+    Route::middleware('auth:sanctum')->get('/my-clubs', [ClubController::class, 'myClubs'])->name('clubs.my-clubs');
+    Route::get('/{club}', [ClubController::class, 'show'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.show');
+    Route::get('/{club}/amenities', [ClubController::class, 'getAmenities'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.amenities');
+    Route::get('/{club}/facilities', [ClubController::class, 'getFacilities'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.facilities');
+    Route::get('/{club}/images', [ClubController::class, 'getImages'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.images');
+    Route::get('/{club}/check-ins', [ClubController::class, 'getCheckIns'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.check-ins');
+    Route::get('/{club}/events', [ClubController::class, 'getEvents'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.events');
+    Route::get('/{club}/statistics', [ClubController::class, 'statistics'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.statistics');
+    Route::get('/{club}/qr-code', [ClubController::class, 'generateQrCode'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.qr-code');
 });
 
 
@@ -154,30 +155,27 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Club management routes
     Route::prefix('clubs')->group(function () {
-        // Authenticated user routes (get their own clubs)
-        Route::get('/my-clubs', [ClubController::class, 'myClubs'])->name('clubs.my-clubs');
-
-        // Club owner and admin routes
-        Route::middleware('role:owner,admin')->group(function () {
-            Route::post('/', [ClubController::class, 'store'])->name('clubs.store');
-            Route::put('/{club}', [ClubController::class, 'update'])->name('clubs.update');
-            Route::delete('/{club}', [ClubController::class, 'destroy'])->name('clubs.destroy');
-            Route::post('/{club}/toggle-status', [ClubController::class, 'toggleStatus'])->name('clubs.toggle-status');
-            Route::post('/{club}/amenities', [ClubController::class, 'addAmenities'])->name('clubs.add-amenities');
-            Route::delete('/{club}/amenities/{amenity}', [ClubController::class, 'removeAmenity'])->name('clubs.remove-amenity');
-            Route::post('/{club}/facilities', [ClubController::class, 'addFacilities'])->name('clubs.add-facilities');
-            Route::delete('/{club}/facilities/{facility}', [ClubController::class, 'removeFacility'])->name('clubs.remove-facility');
-            Route::post('/{club}/images', [ClubController::class, 'addImage'])->name('clubs.add-image');
-            Route::delete('/{club}/images/{image}', [ClubController::class, 'removeImage'])->name('clubs.remove-image');
-            Route::post('/{club}/check-in', [ClubController::class, 'checkIn'])->name('clubs.check-in');
-        });
-        
-        // Admin only routes
+        // Admin only routes - must come before parameter routes
         Route::prefix('admin')->middleware('role:admin')->group(function () {
             Route::get('/', [ClubController::class, 'adminIndex'])->name('admin.clubs.index');
-            Route::post('/{club}/verify', [ClubController::class, 'verify'])->name('admin.clubs.verify');
-            Route::post('/{club}/unverify', [ClubController::class, 'unverify'])->name('admin.clubs.unverify');
+            Route::post('/{club}/verify', [ClubController::class, 'verify'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('admin.clubs.verify');
+            Route::post('/{club}/unverify', [ClubController::class, 'unverify'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('admin.clubs.unverify');
             Route::get('/statistics', [ClubController::class, 'adminStatistics'])->name('admin.clubs.statistics');
+        });
+
+        // Club owner and admin routes - parameter routes come last
+        Route::middleware('role:owner,admin')->group(function () {
+            Route::post('/', [ClubController::class, 'store'])->name('clubs.store');
+            Route::put('/{club}', [ClubController::class, 'update'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.update');
+            Route::delete('/{club}', [ClubController::class, 'destroy'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.destroy');
+            Route::post('/{club}/toggle-status', [ClubController::class, 'toggleStatus'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.toggle-status');
+            Route::post('/{club}/amenities', [ClubController::class, 'addAmenities'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.add-amenities');
+            Route::delete('/{club}/amenities/{amenity}', [ClubController::class, 'removeAmenity'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.remove-amenity');
+            Route::post('/{club}/facilities', [ClubController::class, 'addFacilities'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.add-facilities');
+            Route::delete('/{club}/facilities/{facility}', [ClubController::class, 'removeFacility'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.remove-facility');
+            Route::post('/{club}/images', [ClubController::class, 'addImage'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.add-image');
+            Route::delete('/{club}/images/{image}', [ClubController::class, 'removeImage'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.remove-image');
+            Route::post('/{club}/check-in', [ClubController::class, 'checkIn'])->where('club', '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')->name('clubs.check-in');
         });
     });
     

@@ -240,7 +240,13 @@ class ClubController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => [
-                'clubs' => $clubs
+                'clubs' => $clubs->items(),
+                'pagination' => [
+                    'current_page' => $clubs->currentPage(),
+                    'last_page' => $clubs->lastPage(),
+                    'per_page' => $clubs->perPage(),
+                    'total' => $clubs->total(),
+                ]
             ]
         ]);
     }
