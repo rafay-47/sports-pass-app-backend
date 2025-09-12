@@ -90,6 +90,7 @@ Route::prefix('clubs')->group(function () {
     Route::get('/search', [ClubController::class, 'search'])->name('clubs.search');
     Route::get('/nearby', [ClubController::class, 'nearby'])->name('clubs.nearby');
     Route::get('/filter', [ClubController::class, 'filter'])->name('clubs.filter');
+    Route::get('/owner/{ownerId}', [ClubController::class, 'getByOwner'])->name('clubs.by-owner');
     Route::get('/{club}', [ClubController::class, 'show'])->name('clubs.show');
     Route::get('/{club}/amenities', [ClubController::class, 'getAmenities'])->name('clubs.amenities');
     Route::get('/{club}/facilities', [ClubController::class, 'getFacilities'])->name('clubs.facilities');

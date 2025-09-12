@@ -246,6 +246,37 @@ class ClubController extends Controller
     }
 
     /**
+     * Get clubs by owner ID.
+     */
+    public function getByOwner(Request $request, string $ownerId): JsonResponse
+    {
+        $validator = Validator::make(['owner_id' => $ownerId], [
+            'owner_id' => 'required|string|exists:users,id'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $clubs = Club::ownedBy($ownerId)
+            ->with(['sport', 'amenities', 'facilities', 'primaryImage'])
+            ->orderBy('name')
+            ->paginate(15);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'clubs' => $clubs,
+                'owner_id' => $ownerId
+            ]
+        ]);
+    }
+
+    /**
      * Update club status (admin only).
      */
     public function updateStatus(Request $request, Club $club): JsonResponse
