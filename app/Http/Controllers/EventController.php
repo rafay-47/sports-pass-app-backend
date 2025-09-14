@@ -156,6 +156,86 @@ class EventController extends Controller
     }
 
     /**
+     * Get events by organizer.
+     */
+    public function getByOrganizer(Request $request, $userId = null)
+    {
+        // If no user ID provided, use authenticated user
+        if (!$userId) {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+            $userId = $user->id;
+        }
+
+        // Validate user exists
+        $organizer = \App\Models\User::find($userId);
+        if (!$organizer) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Organizer not found'
+            ], 404);
+        }
+
+        $query = Event::where('organizer_id', $userId)
+            ->with(['sport', 'club', 'organizer']);
+
+        // Filter by status if provided
+        if ($request->has('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($request->status === 'upcoming') {
+                $query->upcoming();
+            } elseif ($request->status === 'past') {
+                $query->where('event_date', '<', now()->toDateString());
+            }
+        } else {
+            // Default to active and upcoming events
+            $query->where('is_active', true)->upcoming();
+        }
+
+        // Filter by sport if provided
+        if ($request->has('sport_id')) {
+            $query->where('sport_id', $request->sport_id);
+        }
+
+        $events = $query->orderBy('event_date', 'asc')
+            ->orderBy('event_time', 'asc')
+            ->paginate(15);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'organizer' => [
+                    'id' => $organizer->id,
+                    'name' => $organizer->name,
+                    'email' => $organizer->email,
+                    'user_role' => $organizer->user_role,
+                ],
+                'events' => $events->items(),
+                'pagination' => [
+                    'current_page' => $events->currentPage(),
+                    'last_page' => $events->lastPage(),
+                    'per_page' => $events->perPage(),
+                    'total' => $events->total(),
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Get current user's organized events.
+     */
+    public function getMyEvents(Request $request)
+    {
+        return $this->getByOrganizer($request);
+    }
+
+    /**
      * Register user for an event.
      */
     public function register(Request $request, Event $event)

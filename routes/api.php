@@ -206,6 +206,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [EventController::class, 'store'])->name('events.store');
         Route::get('/statistics', [EventController::class, 'statistics'])->name('events.statistics');
         Route::get('/sport/{sport}', [EventController::class, 'getBySport'])->name('events.by-sport');
+        Route::get('/organizer/{user?}', [EventController::class, 'getByOrganizer'])->name('events.by-organizer');
+        Route::get('/my-events', [EventController::class, 'getMyEvents'])->name('events.my-events');
         Route::post('/{event}/register', [EventController::class, 'register'])->name('events.register');
         Route::get('/my-registrations', [EventController::class, 'myRegistrations'])->name('events.my-registrations');
         Route::get('/{event}', [EventController::class, 'show'])->name('events.show');
