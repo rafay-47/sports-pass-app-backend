@@ -18,6 +18,8 @@ class Event extends Model
         'title',
         'description',
         'sport_id',
+        'club_id',
+        'location_type',
         'event_date',
         'event_time',
         'end_date',
@@ -28,13 +30,17 @@ class Event extends Model
         'fee',
         'max_participants',
         'current_participants',
-        'location',
+        'custom_address',
+        'custom_city',
+        'custom_state',
         'organizer',
         'requirements',
         'prizes',
         'is_active',
         'registration_deadline',
     ];
+
+    protected $appends = ['formatted_location'];
 
     protected $casts = [
         'event_date' => 'date',
@@ -48,6 +54,7 @@ class Event extends Model
         'prizes' => 'array',
         'is_active' => 'boolean',
         'registration_deadline' => 'datetime',
+        'location_type' => 'string',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'id' => 'string',
@@ -76,11 +83,11 @@ class Event extends Model
     }
 
     /**
-     * Get the club that hosts this event (based on location).
+     * Get the club that hosts this event (if location type is club).
      */
     public function club()
     {
-        return $this->belongsTo(Club::class, 'location', 'address');
+        return $this->belongsTo(Club::class);
     }
 
     /**
@@ -137,5 +144,49 @@ class Event extends Model
     public function availableSpots(): int
     {
         return max(0, $this->max_participants - $this->current_participants);
+    }
+
+    /**
+     * Get the formatted location string.
+     */
+    public function getFormattedLocationAttribute(): string
+    {
+        switch ($this->location_type) {
+            case 'club':
+                return $this->club ? $this->club->name . ' - ' . $this->club->address : 'Club location';
+            
+            case 'custom':
+                if ($this->custom_address) {
+                    $location = $this->custom_address;
+                    if ($this->custom_city) {
+                        $location .= ', ' . $this->custom_city;
+                    }
+                    if ($this->custom_state) {
+                        $location .= ', ' . $this->custom_state;
+                    }
+                    return $location;
+                }
+                return 'Custom location not specified';
+            
+            case 'legacy':
+            default:
+                return 'Location not specified';
+        }
+    }
+
+    /**
+     * Check if event has a club location.
+     */
+    public function hasClubLocation(): bool
+    {
+        return $this->location_type === 'club' && !is_null($this->club_id);
+    }
+
+    /**
+     * Check if event has a custom location.
+     */
+    public function hasCustomLocation(): bool
+    {
+        return $this->location_type === 'custom' && !is_null($this->custom_address);
     }
 }

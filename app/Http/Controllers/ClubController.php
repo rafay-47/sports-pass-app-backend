@@ -1395,7 +1395,7 @@ class ClubController extends Controller
      */
     public function getEvents(Request $request, Club $club): JsonResponse
     {
-        $query = $club->events()->with(['sport']);
+        $query = $club->events()->with(['sport', 'club']);
 
         // Filter by status
         if ($request->filled('status')) {

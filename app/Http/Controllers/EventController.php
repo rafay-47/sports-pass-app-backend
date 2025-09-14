@@ -18,7 +18,7 @@ class EventController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Event::with(['sport']);
+        $query = Event::with(['sport', 'club']);
 
         // Filter by sport
         if ($request->has('sport_id')) {
@@ -78,7 +78,7 @@ class EventController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Event created successfully',
-            'data' => $event->load('sport')
+            'data' => $event->load(['sport', 'club'])
         ], 201);
     }
 
@@ -87,7 +87,7 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-        $event->load(['sport']);
+        $event->load(['sport', 'club']);
 
         return response()->json([
             'status' => 'success',
@@ -105,7 +105,7 @@ class EventController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Event updated successfully',
-            'data' => $event->load('sport')
+            'data' => $event->load(['sport', 'club'])
         ]);
     }
 
@@ -136,6 +136,7 @@ class EventController extends Controller
     public function getBySport(Sport $sport)
     {
         $events = $sport->events()
+            ->with(['sport', 'club'])
             ->active()
             ->upcoming()
             ->paginate(15);
@@ -215,7 +216,7 @@ class EventController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Successfully registered for event',
-            'data' => $registration->load(['event', 'user'])
+            'data' => $registration->load(['event.sport', 'event.club', 'user'])
         ], 201);
     }
 
@@ -227,7 +228,7 @@ class EventController extends Controller
         $user = Auth::user();
 
         $registrations = $user->eventRegistrations()
-            ->with(['event.sport'])
+            ->with(['event.sport', 'event.club'])
             ->paginate(15);
 
         return response()->json([

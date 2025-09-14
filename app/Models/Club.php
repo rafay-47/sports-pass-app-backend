@@ -126,7 +126,7 @@ class Club extends Model
      */
     public function events(): HasMany
     {
-        return $this->hasMany(Event::class, 'location', 'address');
+        return $this->hasMany(Event::class);
     }
 
     /**

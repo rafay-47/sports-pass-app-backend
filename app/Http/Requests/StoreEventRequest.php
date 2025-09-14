@@ -24,6 +24,10 @@ class StoreEventRequest extends FormRequest
             'description' => 'nullable|string',
             'sport_id' => 'required|uuid|exists:sports,id',
             'club_id' => 'nullable|uuid|exists:clubs,id',
+            'location_type' => 'required|in:club,custom',
+            'custom_address' => 'nullable|string|max:255',
+            'custom_city' => 'nullable|string|max:100',
+            'custom_state' => 'nullable|string|max:100',
             'event_date' => 'required|date|after:today',
             'event_time' => 'required|date_format:Y-m-d H:i:s',
             'end_date' => 'nullable|date|after_or_equal:event_date',
@@ -33,7 +37,6 @@ class StoreEventRequest extends FormRequest
             'difficulty' => 'nullable|in:easy,medium,hard',
             'fee' => 'required|numeric|min:0',
             'max_participants' => 'required|integer|min:1|max:1000',
-            'location' => 'nullable|string|max:255',
             'organizer' => 'nullable|string|max:255',
             'requirements' => 'nullable|array',
             'requirements.*' => 'string|max:255',
@@ -45,8 +48,42 @@ class StoreEventRequest extends FormRequest
     }
 
     /**
-     * Get custom messages for validator errors.
+     * Configure the validator instance.
      */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $locationType = $this->input('location_type');
+            $clubId = $this->input('club_id');
+            $customAddress = $this->input('custom_address');
+
+            if ($locationType === 'club') {
+                if (!$clubId) {
+                    $validator->errors()->add('club_id', 'Club ID is required when location type is club.');
+                }
+                if ($customAddress) {
+                    $validator->errors()->add('custom_address', 'Custom address should not be provided when location type is club.');
+                }
+            } elseif ($locationType === 'custom') {
+                if (!$customAddress) {
+                    $validator->errors()->add('custom_address', 'Custom address is required when location type is custom.');
+                }
+                if ($clubId) {
+                    $validator->errors()->add('club_id', 'Club ID should not be provided when location type is custom.');
+                }
+            }
+
+            // If custom location is provided, ensure all required custom fields are present
+            if ($locationType === 'custom' && $customAddress) {
+                $customCity = $this->input('custom_city');
+                $customState = $this->input('custom_state');
+                
+                if (!$customCity || !$customState) {
+                    $validator->errors()->add('custom_location', 'When providing a custom address, both city and state are required.');
+                }
+            }
+        });
+    }
     public function messages(): array
     {
         return [
@@ -54,6 +91,11 @@ class StoreEventRequest extends FormRequest
             'sport_id.required' => 'Sport is required',
             'sport_id.exists' => 'Selected sport does not exist',
             'club_id.exists' => 'Selected club does not exist',
+            'location_type.required' => 'Location type is required',
+            'location_type.in' => 'Location type must be either club or custom',
+            'custom_address.max' => 'Custom address cannot exceed 255 characters',
+            'custom_city.max' => 'Custom city cannot exceed 100 characters',
+            'custom_state.max' => 'Custom state cannot exceed 100 characters',
             'event_date.required' => 'Event date is required',
             'event_date.after' => 'Event date must be in the future',
             'event_time.required' => 'Event time is required',
