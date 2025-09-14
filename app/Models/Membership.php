@@ -276,6 +276,14 @@ class Membership extends Model
     }
 
     /**
+     * Increment check-in counter for the membership.
+     */
+    public function incrementCheckIn(): void
+    {
+        $this->increment('monthly_check_ins');
+    }
+
+    /**
      * Reset monthly counters.
      */
     public function resetMonthlyCounters(): void

@@ -136,6 +136,9 @@ class CheckInController extends Controller
             'qr_code_used' => $request->qr_code_used,
         ]);
 
+        // Update membership check-in stats
+        $membership->incrementCheckIn();
+
         return response()->json([
             'status' => 'success',
             'message' => 'Check-in successful',

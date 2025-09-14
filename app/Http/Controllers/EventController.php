@@ -18,6 +18,14 @@ class EventController extends Controller
      */
     public function index(Request $request)
     {
+        $user = Auth::user();
+
+        // Get user's registered event IDs
+        $registeredEventIds = $user->eventRegistrations()
+            ->where('status', 'confirmed')
+            ->pluck('event_id')
+            ->toArray();
+
         $query = Event::with(['sport', 'club', 'organizer']);
 
         // Filter by sport
@@ -58,12 +66,31 @@ class EventController extends Controller
             });
         }
 
+        // Exclude events the user has already registered for
+        if (!empty($registeredEventIds)) {
+            $query->whereNotIn('id', $registeredEventIds);
+        }
+
         $events = $query->get();
+
+        // Get user's registered events
+        $registeredEvents = collect([]);
+        if (!empty($registeredEventIds)) {
+            $registeredEvents = Event::whereIn('id', $registeredEventIds)
+                ->with(['sport', 'club', 'organizer'])
+                ->get();
+        }
 
         return response()->json([
             'status' => 'success',
             'data' => [
-                'events' => $events
+                'events' => $events,
+                'registeredEvents' => $registeredEvents,
+                'meta' => [
+                    'total_available' => $events->count(),
+                    'total_registered' => $registeredEvents->count(),
+                    'user_id' => $user->id
+                ]
             ]
         ]);
     }
@@ -135,21 +162,57 @@ class EventController extends Controller
      */
     public function getBySport(Sport $sport)
     {
-        $events = $sport->events()
+        $user = Auth::user();
+
+        // Get user's registered event IDs for this sport
+        $registeredEventIds = $user->eventRegistrations()
+            ->where('status', 'confirmed')
+            ->whereHas('event', function($query) use ($sport) {
+                $query->where('sport_id', $sport->id);
+            })
+            ->pluck('event_id')
+            ->toArray();
+
+        $query = $sport->events()
             ->with(['sport', 'club', 'organizer'])
             ->active()
-            ->upcoming()
-            ->paginate(15);
+            ->upcoming();
+
+        // Exclude events the user has already registered for
+        if (!empty($registeredEventIds)) {
+            $query->whereNotIn('events.id', $registeredEventIds);
+        }
+
+        $events = $query->paginate(15);
+
+        // Get user's registered events for this sport
+        $registeredEvents = collect([]);
+        if (!empty($registeredEventIds)) {
+            $registeredEvents = Event::whereIn('id', $registeredEventIds)
+                ->where('sport_id', $sport->id)
+                ->with(['sport', 'club', 'organizer'])
+                ->get();
+        }
 
         return response()->json([
             'status' => 'success',
             'data' => [
                 'events' => $events->items(),
+                'registeredEvents' => $registeredEvents,
                 'pagination' => [
                     'current_page' => $events->currentPage(),
                     'last_page' => $events->lastPage(),
                     'per_page' => $events->perPage(),
                     'total' => $events->total(),
+                ],
+                'meta' => [
+                    'sport' => [
+                        'id' => $sport->id,
+                        'name' => $sport->name
+                    ],
+                    'total_available' => $events->total(),
+                    'total_registered' => $registeredEvents->count(),
+                    'user_id' => $user->id
                 ]
             ]
         ]);

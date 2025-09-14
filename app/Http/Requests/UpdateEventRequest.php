@@ -11,7 +11,26 @@ class UpdateEventRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() && in_array($this->user()->user_role, ['admin', 'owner']);
+        return $this->user() !== null;
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation()
+    {
+        // If organizer_id is not provided in the update, keep the existing one
+        // Only allow organizer_id changes for admin/owner users
+        if (!$this->has('organizer_id') && !in_array($this->user()->user_role, ['admin', 'owner'])) {
+            // Don't modify organizer_id if not provided and user is not admin/owner
+            return;
+        }
+
+        // If user is not admin/owner and trying to change organizer_id, prevent it
+        if ($this->has('organizer_id') && !in_array($this->user()->user_role, ['admin', 'owner'])) {
+            // Remove organizer_id from the request to prevent unauthorized changes
+            $this->request->remove('organizer_id');
+        }
     }
 
     /**
@@ -39,7 +58,7 @@ class UpdateEventRequest extends FormRequest
             'difficulty' => 'nullable|in:easy,medium,hard',
             'fee' => 'sometimes|required|numeric|min:0',
             'max_participants' => 'sometimes|required|integer|min:1|max:1000',
-            'organizer_id' => 'nullable|uuid|exists:users,id',
+            'organizer_id' => 'sometimes|nullable|uuid|exists:users,id',
             'requirements' => 'nullable|array',
             'requirements.*' => 'string|max:255',
             'prizes' => 'nullable|array',
@@ -117,6 +136,7 @@ class UpdateEventRequest extends FormRequest
             'max_participants.integer' => 'Maximum participants must be a valid number',
             'max_participants.min' => 'Maximum participants must be at least 1',
             'max_participants.max' => 'Maximum participants cannot exceed 1000',
+            'organizer_id.exists' => 'Selected organizer does not exist',
             'registration_deadline.before' => 'Registration deadline must be before event date',
         ];
     }

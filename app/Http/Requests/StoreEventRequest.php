@@ -11,7 +11,18 @@ class StoreEventRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() && in_array($this->user()->user_role, ['admin', 'owner']);
+        return $this->user() !== null;
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation()
+    {
+        // Automatically set organizer_id to the authenticated user's ID
+        $this->merge([
+            'organizer_id' => $this->user()->id,
+        ]);
     }
 
     /**
@@ -37,7 +48,7 @@ class StoreEventRequest extends FormRequest
             'difficulty' => 'nullable|in:easy,medium,hard',
             'fee' => 'required|numeric|min:0',
             'max_participants' => 'required|integer|min:1|max:1000',
-            'organizer_id' => 'nullable|uuid|exists:users,id',
+            'organizer_id' => 'required|uuid|exists:users,id',
             'requirements' => 'nullable|array',
             'requirements.*' => 'string|max:255',
             'prizes' => 'nullable|array',
@@ -109,6 +120,8 @@ class StoreEventRequest extends FormRequest
             'max_participants.integer' => 'Maximum participants must be a valid number',
             'max_participants.min' => 'Maximum participants must be at least 1',
             'max_participants.max' => 'Maximum participants cannot exceed 1000',
+            'organizer_id.required' => 'Organizer is required',
+            'organizer_id.exists' => 'Selected organizer does not exist',
             'registration_deadline.before' => 'Registration deadline must be before event date',
         ];
     }
