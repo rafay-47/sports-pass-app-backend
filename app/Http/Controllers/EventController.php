@@ -18,7 +18,7 @@ class EventController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Event::with(['sport', 'club']);
+        $query = Event::with(['sport', 'club', 'organizer']);
 
         // Filter by sport
         if ($request->has('sport_id')) {
@@ -78,7 +78,7 @@ class EventController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Event created successfully',
-            'data' => $event->load(['sport', 'club'])
+            'data' => $event->load(['sport', 'club', 'organizer'])
         ], 201);
     }
 
@@ -87,7 +87,7 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-        $event->load(['sport', 'club']);
+        $event->load(['sport', 'club', 'organizer']);
 
         return response()->json([
             'status' => 'success',
@@ -105,7 +105,7 @@ class EventController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Event updated successfully',
-            'data' => $event->load(['sport', 'club'])
+            'data' => $event->load(['sport', 'club', 'organizer'])
         ]);
     }
 
@@ -136,7 +136,7 @@ class EventController extends Controller
     public function getBySport(Sport $sport)
     {
         $events = $sport->events()
-            ->with(['sport', 'club'])
+            ->with(['sport', 'club', 'organizer'])
             ->active()
             ->upcoming()
             ->paginate(15);
@@ -228,7 +228,7 @@ class EventController extends Controller
         $user = Auth::user();
 
         $registrations = $user->eventRegistrations()
-            ->with(['event.sport', 'event.club'])
+            ->with(['event.sport', 'event.club', 'event.organizer'])
             ->paginate(15);
 
         return response()->json([

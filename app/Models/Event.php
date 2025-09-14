@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Event extends Model
 {
@@ -33,7 +34,7 @@ class Event extends Model
         'custom_address',
         'custom_city',
         'custom_state',
-        'organizer',
+        'organizer_id',
         'requirements',
         'prizes',
         'is_active',
@@ -59,6 +60,8 @@ class Event extends Model
         'updated_at' => 'datetime',
         'id' => 'string',
         'sport_id' => 'string',
+        'club_id' => 'string',
+        'organizer_id' => 'string',
     ];
 
     public function getRouteKeyName()
@@ -72,6 +75,14 @@ class Event extends Model
     public function sport()
     {
         return $this->belongsTo(Sport::class);
+    }
+
+    /**
+     * Get the organizer (user) for this event.
+     */
+    public function organizer()
+    {
+        return $this->belongsTo(User::class, 'organizer_id');
     }
 
     /**

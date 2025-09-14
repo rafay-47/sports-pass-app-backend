@@ -39,7 +39,7 @@ class UpdateEventRequest extends FormRequest
             'difficulty' => 'nullable|in:easy,medium,hard',
             'fee' => 'sometimes|required|numeric|min:0',
             'max_participants' => 'sometimes|required|integer|min:1|max:1000',
-            'organizer' => 'nullable|string|max:255',
+            'organizer_id' => 'nullable|uuid|exists:users,id',
             'requirements' => 'nullable|array',
             'requirements.*' => 'string|max:255',
             'prizes' => 'nullable|array',

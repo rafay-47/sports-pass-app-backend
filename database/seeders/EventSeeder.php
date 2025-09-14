@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Event;
 use App\Models\Sport;
 use App\Models\User;
+use App\Models\Club;
 use Illuminate\Database\Seeder;
 use Carbon\Carbon;
 
@@ -17,6 +18,7 @@ class EventSeeder extends Seeder
     {
         $sports = Sport::all();
         $organizers = User::where('user_role', 'owner')->orWhere('user_role', 'admin')->get();
+        $clubs = \App\Models\Club::all();
 
         if ($sports->isEmpty()) {
             return; // No sports available
@@ -27,6 +29,8 @@ class EventSeeder extends Seeder
                 'title' => 'Summer Basketball Tournament',
                 'description' => 'Annual summer basketball tournament for all skill levels. Join us for an exciting day of competitive basketball!',
                 'sport_id' => $sports->where('name', 'Basketball')->first()?->id ?? $sports->first()->id,
+                'location_type' => 'club',
+                'club_id' => $clubs->random()->id ?? null,
                 'event_date' => Carbon::now()->addDays(30)->toDateString(),
                 'event_time' => Carbon::now()->addDays(30)->setTime(9, 0),
                 'end_date' => Carbon::now()->addDays(30)->toDateString(),
@@ -37,8 +41,7 @@ class EventSeeder extends Seeder
                 'fee' => 25.00,
                 'max_participants' => 64,
                 'current_participants' => 0,
-                'location' => 'Sports Arena Pro',
-                'organizer' => $organizers->random()->name ?? 'Sports Club',
+                'organizer_id' => $organizers->random()->id ?? null,
                 'requirements' => ['Valid ID', 'Sports shoes', 'Water bottle'],
                 'prizes' => ['1st Place: $500', '2nd Place: $300', '3rd Place: $200'],
                 'is_active' => true,
@@ -48,6 +51,10 @@ class EventSeeder extends Seeder
                 'title' => 'Yoga & Meditation Workshop',
                 'description' => 'A relaxing workshop combining yoga poses with meditation techniques for stress relief and mindfulness.',
                 'sport_id' => $sports->where('name', 'Yoga')->first()?->id ?? $sports->first()->id,
+                'location_type' => 'custom',
+                'custom_address' => 'Wellness Center Downtown',
+                'custom_city' => 'New York',
+                'custom_state' => 'NY',
                 'event_date' => Carbon::now()->addDays(14)->toDateString(),
                 'event_time' => Carbon::now()->addDays(14)->setTime(10, 0),
                 'end_date' => Carbon::now()->addDays(14)->toDateString(),
@@ -58,8 +65,7 @@ class EventSeeder extends Seeder
                 'fee' => 45.00,
                 'max_participants' => 30,
                 'current_participants' => 0,
-                'location' => 'Wellness Hub',
-                'organizer' => $organizers->random()->name ?? 'Wellness Hub',
+                'organizer_id' => $organizers->random()->id ?? null,
                 'requirements' => ['Comfortable clothing', 'Yoga mat (optional)', 'Towel'],
                 'prizes' => ['Completion certificate', 'Free month membership'],
                 'is_active' => true,
@@ -69,6 +75,8 @@ class EventSeeder extends Seeder
                 'title' => 'CrossFit Competition',
                 'description' => 'Test your limits in this high-intensity CrossFit competition. WODs designed for all fitness levels.',
                 'sport_id' => $sports->where('name', 'CrossFit')->first()?->id ?? $sports->first()->id,
+                'location_type' => 'club',
+                'club_id' => $clubs->random()->id ?? null,
                 'event_date' => Carbon::now()->addDays(45)->toDateString(),
                 'event_time' => Carbon::now()->addDays(45)->setTime(8, 0),
                 'end_date' => Carbon::now()->addDays(45)->toDateString(),
@@ -79,8 +87,7 @@ class EventSeeder extends Seeder
                 'fee' => 50.00,
                 'max_participants' => 100,
                 'current_participants' => 0,
-                'location' => 'Power Gym',
-                'organizer' => $organizers->random()->name ?? 'Power Gym',
+                'organizer_id' => $organizers->random()->id ?? null,
                 'requirements' => ['CrossFit experience', 'Proper athletic wear', 'Personal water bottle'],
                 'prizes' => ['1st Place: $1000', '2nd Place: $500', '3rd Place: $250'],
                 'is_active' => true,
@@ -90,6 +97,10 @@ class EventSeeder extends Seeder
                 'title' => 'Swimming Lessons for Beginners',
                 'description' => 'Learn the basics of swimming in a safe, supportive environment. All levels welcome!',
                 'sport_id' => $sports->where('name', 'Swimming')->first()?->id ?? $sports->first()->id,
+                'location_type' => 'custom',
+                'custom_address' => 'City Pool Complex',
+                'custom_city' => 'Los Angeles',
+                'custom_state' => 'CA',
                 'event_date' => Carbon::now()->addDays(7)->toDateString(),
                 'event_time' => Carbon::now()->addDays(7)->setTime(14, 0),
                 'end_date' => Carbon::now()->addDays(7)->toDateString(),
@@ -100,8 +111,7 @@ class EventSeeder extends Seeder
                 'fee' => 30.00,
                 'max_participants' => 20,
                 'current_participants' => 0,
-                'location' => 'Urban Athletics',
-                'organizer' => $organizers->random()->name ?? 'Urban Athletics',
+                'organizer_id' => $organizers->random()->id ?? null,
                 'requirements' => ['Swimsuit', 'Towel', 'Goggles'],
                 'prizes' => ['Completion certificate'],
                 'is_active' => true,
@@ -111,6 +121,8 @@ class EventSeeder extends Seeder
                 'title' => 'Marathon Training Workshop',
                 'description' => 'Comprehensive workshop covering marathon training techniques, nutrition, and mental preparation.',
                 'sport_id' => $sports->where('name', 'Running')->first()?->id ?? $sports->first()->id,
+                'location_type' => 'club',
+                'club_id' => $clubs->random()->id ?? null,
                 'event_date' => Carbon::now()->addDays(21)->toDateString(),
                 'event_time' => Carbon::now()->addDays(21)->setTime(9, 0),
                 'end_date' => Carbon::now()->addDays(21)->toDateString(),
@@ -121,8 +133,7 @@ class EventSeeder extends Seeder
                 'fee' => 60.00,
                 'max_participants' => 50,
                 'current_participants' => 0,
-                'location' => 'Elite Fitness Center',
-                'organizer' => $organizers->random()->name ?? 'Elite Fitness Center',
+                'organizer_id' => $organizers->random()->id ?? null,
                 'requirements' => ['Running shoes', 'Comfortable clothing', 'Notebook'],
                 'prizes' => ['Training plan', 'Nutrition guide', 'Free coaching session'],
                 'is_active' => true,
