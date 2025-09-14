@@ -72,14 +72,6 @@ class Club extends Model
     }
 
     /**
-     * Get the sports offered by this club.
-     */
-    public function sports(): BelongsToMany
-    {
-        return $this->belongsToMany(Sport::class, 'club_sports');
-    }
-
-    /**
      * Get the amenities available at this club.
      */
     public function amenities(): BelongsToMany
@@ -215,7 +207,7 @@ class Club extends Model
         $checkInsCount = $this->checkIns()->count();
         $uniqueVisitors = $this->checkIns()->distinct('user_id')->count();
         $eventsCount = $this->events()->count();
-        $sportsCount = $this->sports()->count();
+        $sportsCount = $this->sport ? 1 : 0;
 
         return [
             'total_check_ins' => $checkInsCount,

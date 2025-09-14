@@ -292,8 +292,9 @@ class Membership extends Model
      */
     public function canAccessClub(string $clubId): bool
     {
-        // Check if the membership's sport is offered by the club
-        return $this->sport->clubs()->where('clubs.id', $clubId)->exists();
+        // Check if the membership's sport matches the club's sport
+        $club = Club::find($clubId);
+        return $club && $this->sport_id === $club->sport_id;
     }
 
     /**

@@ -79,7 +79,7 @@ class CheckInController extends Controller
         $user = User::find($request->user_id);
         $club = Club::find($request->club_id);
 
-        // Check if user has active membership for sports offered by this club
+        // Check if user has active membership for the club's sport
         $membership = null;
         if ($request->membership_id) {
             // If specific membership_id provided, validate it
@@ -87,22 +87,14 @@ class CheckInController extends Controller
                 ->where('user_id', $request->user_id)
                 ->where('status', 'active')
                 ->where('expiry_date', '>=', now())
-                ->whereHas('sport', function($query) use ($request) {
-                    $query->whereHas('clubs', function($q) use ($request) {
-                        $q->where('clubs.id', $request->club_id);
-                    });
-                })
+                ->where('sport_id', $club->sport_id)
                 ->first();
         } else {
-            // Find any active membership for sports offered by this club
+            // Find any active membership for the club's sport
             $membership = Membership::where('user_id', $request->user_id)
                 ->where('status', 'active')
                 ->where('expiry_date', '>=', now())
-                ->whereHas('sport', function($query) use ($request) {
-                    $query->whereHas('clubs', function($q) use ($request) {
-                        $q->where('clubs.id', $request->club_id);
-                    });
-                })
+                ->where('sport_id', $club->sport_id)
                 ->first();
         }
 
@@ -118,6 +110,19 @@ class CheckInController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Membership has expired'
+            ], 422);
+        }
+
+        // Check if user already checked in today with this membership
+        $existingCheckIn = CheckIn::where('user_id', $request->user_id)
+            ->where('membership_id', $membership->id)
+            ->where('check_in_date', today())
+            ->first();
+
+        if ($existingCheckIn) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You have already checked in today with this membership'
             ], 422);
         }
 

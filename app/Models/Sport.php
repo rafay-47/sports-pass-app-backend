@@ -105,9 +105,9 @@ class Sport extends Model
     /**
      * Get the clubs that offer this sport.
      */
-    public function clubs(): BelongsToMany
+    public function clubs(): HasMany
     {
-        return $this->belongsToMany(Club::class, 'club_sports');
+        return $this->hasMany(Club::class, 'sport_id');
     }
 
     /**

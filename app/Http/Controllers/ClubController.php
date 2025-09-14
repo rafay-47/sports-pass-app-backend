@@ -876,9 +876,7 @@ class ClubController extends Controller
         // Filter by sports
         if ($request->filled('sport_ids')) {
             $sportIds = is_array($request->sport_ids) ? $request->sport_ids : [$request->sport_ids];
-            $query->whereHas('sports', function ($q) use ($sportIds) {
-                $q->whereIn('sports.id', $sportIds);
-            });
+            $query->whereIn('sport_id', $sportIds);
         }
 
         // Filter by amenities
@@ -899,7 +897,7 @@ class ClubController extends Controller
 
         // Filter by price range
         if ($request->filled('min_price') || $request->filled('max_price')) {
-            $query->whereHas('sports.tiers', function ($q) use ($request) {
+            $query->whereHas('sport.tiers', function ($q) use ($request) {
                 if ($request->filled('min_price')) {
                     $q->where('price', '>=', $request->min_price);
                 }
@@ -929,8 +927,7 @@ class ClubController extends Controller
         } elseif ($sortBy === 'rating') {
             $query->orderBy('rating', $sortDirection);
         } elseif ($sortBy === 'price') {
-            $query->leftJoin('club_sports', 'clubs.id', '=', 'club_sports.club_id')
-                  ->leftJoin('sport_tiers', 'club_sports.sport_id', '=', 'sport_tiers.sport_id')
+            $query->leftJoin('sport_tiers', 'clubs.sport_id', '=', 'sport_tiers.sport_id')
                   ->orderBy('sport_tiers.price', $sortDirection);
         } else {
             $query->orderBy($sortBy, $sortDirection);
@@ -1279,6 +1276,19 @@ class ClubController extends Controller
                     'status' => 'error',
                     'message' => 'Your membership does not allow access to this club'
                 ], 403);
+            }
+
+            // Check if user already checked in today with this membership
+            $existingCheckIn = CheckIn::where('user_id', $request->user()->id)
+                ->where('membership_id', $request->membership_id)
+                ->where('check_in_date', today())
+                ->first();
+
+            if ($existingCheckIn) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'You have already checked in today with this membership'
+                ], 422);
             }
 
             $checkIn = CheckIn::create([

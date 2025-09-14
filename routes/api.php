@@ -14,6 +14,7 @@ use App\Http\Controllers\TrainerSpecialtyController;
 use App\Http\Controllers\TrainerAvailabilityController;
 use App\Http\Controllers\TrainerLocationController;
 use App\Http\Controllers\TrainerSessionController;
+use App\Http\Controllers\TrainerClubController;
 use App\Http\Controllers\ServicePurchaseController;
 use App\Http\Controllers\AmenityController;
 use App\Http\Controllers\FacilityController;
@@ -295,6 +296,23 @@ Route::middleware('auth:sanctum')->group(function () {
         // Club management for trainers
         Route::post('/{trainerProfile}/clubs', [TrainerProfileController::class, 'addClub'])->name('trainer-profiles.add-club');
         Route::delete('/{trainerProfile}/clubs', [TrainerProfileController::class, 'removeClub'])->name('trainer-profiles.remove-club');
+    });
+
+    // Trainer Clubs management routes
+    Route::prefix('trainer-clubs')->group(function () {
+        Route::get('/', [TrainerClubController::class, 'statistics'])->name('trainer-clubs.statistics');
+        Route::get('/trainer/{trainerProfile}', [TrainerClubController::class, 'getByTrainer'])->name('trainer-clubs.by-trainer');
+        Route::get('/club/{club}', [TrainerClubController::class, 'getByClub'])->name('trainer-clubs.by-club');
+        Route::get('/trainer/{trainerProfile}/clubs', [TrainerClubController::class, 'index'])->name('trainer-clubs.index');
+        Route::post('/trainer/{trainerProfile}/clubs', [TrainerClubController::class, 'store'])->name('trainer-clubs.store');
+        Route::put('/trainer/{trainerProfile}/clubs', [TrainerClubController::class, 'bulkUpdate'])->name('trainer-clubs.bulk-update');
+        Route::put('/trainer/{trainerProfile}/clubs/replace', [TrainerClubController::class, 'replaceAll'])->name('trainer-clubs.replace-all');
+        Route::put('/trainer/{trainerProfile}/primary-club', [TrainerClubController::class, 'updatePrimaryClub'])->name('trainer-clubs.update-primary');
+        Route::put('/trainer/{trainerProfile}/clubs/bulk-primary', [TrainerClubController::class, 'bulkUpdatePrimary'])->name('trainer-clubs.bulk-update-primary');
+        Route::get('/trainer/{trainerProfile}/clubs/{club}', [TrainerClubController::class, 'show'])->name('trainer-clubs.show');
+        Route::put('/trainer/{trainerProfile}/clubs/{club}', [TrainerClubController::class, 'update'])->name('trainer-clubs.update');
+        Route::delete('/trainer/{trainerProfile}/clubs/{club}', [TrainerClubController::class, 'destroy'])->name('trainer-clubs.destroy');
+        Route::post('/trainer/{trainerProfile}/clubs/{club}/set-primary', [TrainerClubController::class, 'setPrimary'])->name('trainer-clubs.set-primary');
     });
 
     // Trainer Certification management routes
