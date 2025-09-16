@@ -506,24 +506,25 @@ class EventController extends Controller
             ], 422);
         }
 
-        $updateData = [
-            'status' => 'postponed',
+        // Prepare date update data
+        $dateUpdates = [
             'event_date' => $request->event_date,
             'event_time' => $request->event_time,
         ];
 
         // Add optional fields if provided
         if ($request->has('end_date')) {
-            $updateData['end_date'] = $request->end_date;
+            $dateUpdates['end_date'] = $request->end_date;
         }
         if ($request->has('end_time')) {
-            $updateData['end_time'] = $request->end_time;
+            $dateUpdates['end_time'] = $request->end_time;
         }
         if ($request->has('registration_deadline')) {
-            $updateData['registration_deadline'] = $request->registration_deadline;
+            $dateUpdates['registration_deadline'] = $request->registration_deadline;
         }
 
-        if ($event->update($updateData)) {
+        // Use the model's postpone method with date updates
+        if ($event->postpone($dateUpdates)) {
             return response()->json([
                 'status' => 'success',
                 'message' => 'Event postponed successfully',
