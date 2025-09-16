@@ -45,10 +45,10 @@ class Event extends Model
     protected $appends = ['formatted_location'];
 
     protected $casts = [
-        'event_date' => 'date',
-        'event_time' => 'datetime',
-        'end_date' => 'date',
-        'end_time' => 'datetime',
+        'event_date' => 'date:Y-m-d',
+        'event_time' => 'datetime:Y-m-d H:i:s',
+        'end_date' => 'date:Y-m-d',
+        'end_time' => 'datetime:Y-m-d H:i:s',
         'fee' => 'decimal:2',
         'max_participants' => 'integer',
         'current_participants' => 'integer',
@@ -56,10 +56,10 @@ class Event extends Model
         'prizes' => 'array',
         'is_active' => 'boolean',
         'status' => 'string',
-        'registration_deadline' => 'datetime',
+        'registration_deadline' => 'datetime:Y-m-d H:i:s',
         'location_type' => 'string',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'created_at' => 'datetime:Y-m-d H:i:s',
+        'updated_at' => 'datetime:Y-m-d H:i:s',
         'id' => 'string',
         'sport_id' => 'string',
         'club_id' => 'string',
@@ -294,7 +294,12 @@ class Event extends Model
                 $updateData = array_merge($updateData, $newDates);
             }
 
-            return $this->update($updateData);
+            // Update the model attributes directly to ensure dates are handled correctly
+            foreach ($updateData as $key => $value) {
+                $this->$key = $value;
+            }
+
+            return $this->save();
         }
         return false;
     }

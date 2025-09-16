@@ -492,9 +492,9 @@ class EventController extends Controller
         // Validate the request data for new dates
         $validator = Validator::make($request->all(), [
             'event_date' => 'required|date|after:today',
-            'event_time' => 'required|date_format:Y-m-d H:i:s',
+            'event_time' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:event_date',
-            'end_time' => 'nullable|date_format:Y-m-d H:i:s',
+            'end_time' => 'nullable|date',
             'registration_deadline' => 'nullable|date|before:event_date',
         ]);
 
@@ -506,7 +506,7 @@ class EventController extends Controller
             ], 422);
         }
 
-        // Prepare date update data
+        // Prepare date update data with proper Carbon instances
         $dateUpdates = [
             'event_date' => $request->event_date,
             'event_time' => $request->event_time,
@@ -525,6 +525,9 @@ class EventController extends Controller
 
         // Use the model's postpone method with date updates
         if ($event->postpone($dateUpdates)) {
+            // Refresh the model to ensure we get the latest data from database
+            $event->refresh();
+            
             return response()->json([
                 'status' => 'success',
                 'message' => 'Event postponed successfully',
