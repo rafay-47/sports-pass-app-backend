@@ -57,10 +57,8 @@ class EventController extends Controller
             } elseif (in_array($request->status, ['draft', 'published', 'ongoing', 'completed', 'cancelled', 'postponed'])) {
                 $query->byStatus($request->status);
             }
-        } else {
-            // Default to published events if no status filter is provided
-            $query->published();
         }
+        // Note: No default status filter - returns all events unless specifically filtered
 
         // Search by title or description
         if ($request->has('search')) {
@@ -190,10 +188,8 @@ class EventController extends Controller
             } elseif (in_array($request->status, ['draft', 'published', 'ongoing', 'completed', 'cancelled', 'postponed'])) {
                 $query->byStatus($request->status);
             }
-        } else {
-            // Default to published events if no status filter is provided
-            $query->published();
         }
+        // Note: No default status filter - returns all events unless specifically filtered
 
         // Exclude events the user has already registered for
         if (!empty($registeredEventIds)) {
