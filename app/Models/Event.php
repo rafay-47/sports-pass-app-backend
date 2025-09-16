@@ -38,6 +38,7 @@ class Event extends Model
         'requirements',
         'prizes',
         'is_active',
+        'status',
         'registration_deadline',
     ];
 
@@ -54,6 +55,7 @@ class Event extends Model
         'requirements' => 'array',
         'prizes' => 'array',
         'is_active' => 'boolean',
+        'status' => 'string',
         'registration_deadline' => 'datetime',
         'location_type' => 'string',
         'created_at' => 'datetime',
@@ -142,6 +144,62 @@ class Event extends Model
     }
 
     /**
+     * Scope to filter by status.
+     */
+    public function scopeByStatus($query, $status)
+    {
+        return $query->where('status', $status);
+    }
+
+    /**
+     * Scope to filter published events.
+     */
+    public function scopePublished($query)
+    {
+        return $query->where('status', 'published');
+    }
+
+    /**
+     * Scope to filter draft events.
+     */
+    public function scopeDraft($query)
+    {
+        return $query->where('status', 'draft');
+    }
+
+    /**
+     * Scope to filter ongoing events.
+     */
+    public function scopeOngoing($query)
+    {
+        return $query->where('status', 'ongoing');
+    }
+
+    /**
+     * Scope to filter completed events.
+     */
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'completed');
+    }
+
+    /**
+     * Scope to filter cancelled events.
+     */
+    public function scopeCancelled($query)
+    {
+        return $query->where('status', 'cancelled');
+    }
+
+    /**
+     * Scope to filter postponed events.
+     */
+    public function scopePostponed($query)
+    {
+        return $query->where('status', 'postponed');
+    }
+
+    /**
      * Check if event is full.
      */
     public function isFull(): bool
@@ -199,5 +257,99 @@ class Event extends Model
     public function hasCustomLocation(): bool
     {
         return $this->location_type === 'custom' && !is_null($this->custom_address);
+    }
+
+    /**
+     * Publish the event.
+     */
+    public function publish(): bool
+    {
+        if ($this->status === 'draft') {
+            return $this->update(['status' => 'published']);
+        }
+        return false;
+    }
+
+    /**
+     * Cancel the event.
+     */
+    public function cancel(): bool
+    {
+        if (in_array($this->status, ['draft', 'published', 'postponed'])) {
+            return $this->update(['status' => 'cancelled']);
+        }
+        return false;
+    }
+
+    /**
+     * Postpone the event.
+     */
+    public function postpone(array $newDates = []): bool
+    {
+        if (in_array($this->status, ['draft', 'published'])) {
+            $updateData = ['status' => 'postponed'];
+
+            // Merge new dates if provided
+            if (!empty($newDates)) {
+                $updateData = array_merge($updateData, $newDates);
+            }
+
+            return $this->update($updateData);
+        }
+        return false;
+    }
+
+    /**
+     * Mark event as ongoing.
+     */
+    public function markAsOngoing(): bool
+    {
+        if ($this->status === 'published') {
+            return $this->update(['status' => 'ongoing']);
+        }
+        return false;
+    }
+
+    /**
+     * Mark event as completed.
+     */
+    public function markAsCompleted(): bool
+    {
+        if (in_array($this->status, ['published', 'ongoing'])) {
+            return $this->update(['status' => 'completed']);
+        }
+        return false;
+    }
+
+    /**
+     * Check if event can be edited.
+     */
+    public function canBeEdited(): bool
+    {
+        return in_array($this->status, ['draft', 'postponed']);
+    }
+
+    /**
+     * Check if event can be cancelled.
+     */
+    public function canBeCancelled(): bool
+    {
+        return in_array($this->status, ['draft', 'published', 'postponed']);
+    }
+
+    /**
+     * Check if event can be postponed.
+     */
+    public function canBePostponed(): bool
+    {
+        return in_array($this->status, ['draft', 'published']);
+    }
+
+    /**
+     * Check if event is active (not cancelled or completed).
+     */
+    public function isActive(): bool
+    {
+        return !in_array($this->status, ['cancelled', 'completed']);
     }
 }

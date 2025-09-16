@@ -213,6 +213,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{event}', [EventController::class, 'show'])->name('events.show');
         Route::put('/{event}', [EventController::class, 'update'])->name('events.update');
         Route::delete('/{event}', [EventController::class, 'destroy'])->name('events.destroy');
+        Route::post('/{event}/cancel', [EventController::class, 'cancel'])->name('events.cancel');
+        Route::post('/{event}/postpone', [EventController::class, 'postpone'])->name('events.postpone');
+        Route::post('/{event}/publish', [EventController::class, 'publish'])->name('events.publish');
+        Route::post('/{event}/mark-ongoing', [EventController::class, 'markAsOngoing'])->name('events.mark-ongoing');
+        Route::post('/{event}/mark-completed', [EventController::class, 'markAsCompleted'])->name('events.mark-completed');
     });
     
     // Event Registration management routes

@@ -51,10 +51,15 @@ class EventController extends Controller
         // Filter by status
         if ($request->has('status')) {
             if ($request->status === 'active') {
-                $query->where('is_active', true);
+                $query->where('is_active', true)->whereNotIn('status', ['cancelled', 'completed']);
             } elseif ($request->status === 'upcoming') {
-                $query->upcoming();
+                $query->upcoming()->whereNotIn('status', ['cancelled', 'completed']);
+            } elseif (in_array($request->status, ['draft', 'published', 'ongoing', 'completed', 'cancelled', 'postponed'])) {
+                $query->byStatus($request->status);
             }
+        } else {
+            // Default to published events if no status filter is provided
+            $query->published();
         }
 
         // Search by title or description
@@ -160,7 +165,7 @@ class EventController extends Controller
     /**
      * Get events by sport.
      */
-    public function getBySport(Sport $sport)
+    public function getBySport(Request $request, Sport $sport)
     {
         $user = Auth::user();
 
@@ -174,9 +179,21 @@ class EventController extends Controller
             ->toArray();
 
         $query = $sport->events()
-            ->with(['sport', 'club', 'organizer'])
-            ->active()
-            ->upcoming();
+            ->with(['sport', 'club', 'organizer']);
+
+        // Filter by status
+        if ($request->has('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', true)->whereNotIn('status', ['cancelled', 'completed']);
+            } elseif ($request->status === 'upcoming') {
+                $query->upcoming()->whereNotIn('status', ['cancelled', 'completed']);
+            } elseif (in_array($request->status, ['draft', 'published', 'ongoing', 'completed', 'cancelled', 'postponed'])) {
+                $query->byStatus($request->status);
+            }
+        } else {
+            // Default to published events if no status filter is provided
+            $query->published();
+        }
 
         // Exclude events the user has already registered for
         if (!empty($registeredEventIds)) {
@@ -405,11 +422,224 @@ class EventController extends Controller
                 ->whereNotNull('category')
                 ->groupBy('category')
                 ->pluck('count', 'category'),
+            'events_by_status' => Event::selectRaw('status, COUNT(*) as count')
+                ->groupBy('status')
+                ->pluck('count', 'status'),
+            'published_events' => Event::published()->count(),
+            'draft_events' => Event::draft()->count(),
+            'ongoing_events' => Event::ongoing()->count(),
+            'completed_events' => Event::completed()->count(),
+            'cancelled_events' => Event::cancelled()->count(),
+            'postponed_events' => Event::postponed()->count(),
         ];
 
         return response()->json([
             'status' => 'success',
             'data' => $stats
         ]);
+    }
+
+    /**
+     * Cancel an event.
+     */
+    public function cancel(Request $request, Event $event)
+    {
+        // Check if user is authorized to cancel this event
+        if ($request->user()->user_role !== 'admin' && $request->user()->user_role !== 'owner' && $event->organizer_id !== $request->user()->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized to cancel this event'
+            ], 403);
+        }
+
+        if (!$event->canBeCancelled()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event cannot be cancelled in its current status'
+            ], 422);
+        }
+
+        if ($event->cancel()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Event cancelled successfully',
+                'data' => $event->load(['sport', 'club', 'organizer'])
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to cancel event'
+        ], 500);
+    }
+
+    /**
+     * Postpone an event.
+     */
+    public function postpone(Request $request, Event $event)
+    {
+        // Check if user is authorized to postpone this event
+        if ($request->user()->user_role !== 'admin' && $request->user()->user_role !== 'owner' && $event->organizer_id !== $request->user()->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized to postpone this event'
+            ], 403);
+        }
+
+        if (!$event->canBePostponed()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event cannot be postponed in its current status'
+            ], 422);
+        }
+
+        // Validate the request data for new dates
+        $validator = Validator::make($request->all(), [
+            'event_date' => 'required|date|after:today',
+            'event_time' => 'required|date_format:Y-m-d H:i:s',
+            'end_date' => 'nullable|date|after_or_equal:event_date',
+            'end_time' => 'nullable|date_format:Y-m-d H:i:s',
+            'registration_deadline' => 'nullable|date|before:event_date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $updateData = [
+            'status' => 'postponed',
+            'event_date' => $request->event_date,
+            'event_time' => $request->event_time,
+        ];
+
+        // Add optional fields if provided
+        if ($request->has('end_date')) {
+            $updateData['end_date'] = $request->end_date;
+        }
+        if ($request->has('end_time')) {
+            $updateData['end_time'] = $request->end_time;
+        }
+        if ($request->has('registration_deadline')) {
+            $updateData['registration_deadline'] = $request->registration_deadline;
+        }
+
+        if ($event->update($updateData)) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Event postponed successfully',
+                'data' => $event->load(['sport', 'club', 'organizer'])
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to postpone event'
+        ], 500);
+    }
+
+    /**
+     * Publish a draft event.
+     */
+    public function publish(Request $request, Event $event)
+    {
+        // Check if user is authorized to publish this event
+        if ($request->user()->user_role !== 'admin' && $request->user()->user_role !== 'owner' && $event->organizer_id !== $request->user()->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized to publish this event'
+            ], 403);
+        }
+
+        if ($event->status !== 'draft') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only draft events can be published'
+            ], 422);
+        }
+
+        if ($event->publish()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Event published successfully',
+                'data' => $event->load(['sport', 'club', 'organizer'])
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to publish event'
+        ], 500);
+    }
+
+    /**
+     * Mark event as ongoing.
+     */
+    public function markAsOngoing(Request $request, Event $event)
+    {
+        // Check if user is authorized to update this event
+        if ($request->user()->user_role !== 'admin' && $request->user()->user_role !== 'owner' && $event->organizer_id !== $request->user()->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized to update this event'
+            ], 403);
+        }
+
+        if ($event->status !== 'published') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only published events can be marked as ongoing'
+            ], 422);
+        }
+
+        if ($event->markAsOngoing()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Event marked as ongoing successfully',
+                'data' => $event->load(['sport', 'club', 'organizer'])
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to mark event as ongoing'
+        ], 500);
+    }
+
+    /**
+     * Mark event as completed.
+     */
+    public function markAsCompleted(Request $request, Event $event)
+    {
+        // Check if user is authorized to update this event
+        if ($request->user()->user_role !== 'admin' && $request->user()->user_role !== 'owner' && $event->organizer_id !== $request->user()->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized to complete this event'
+            ], 403);
+        }
+
+        if (!in_array($event->status, ['published', 'ongoing'])) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only published or ongoing events can be marked as completed'
+            ], 422);
+        }
+
+        if ($event->markAsCompleted()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Event marked as completed successfully',
+                'data' => $event->load(['sport', 'club', 'organizer'])
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to mark event as completed'
+        ], 500);
     }
 }

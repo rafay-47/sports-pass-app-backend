@@ -20,8 +20,10 @@ class StoreEventRequest extends FormRequest
     protected function prepareForValidation()
     {
         // Automatically set organizer_id to the authenticated user's ID
+        // and status to 'draft' for new events
         $this->merge([
             'organizer_id' => $this->user()->id,
+            'status' => $this->input('status', 'draft'),
         ]);
     }
 
@@ -55,6 +57,7 @@ class StoreEventRequest extends FormRequest
             'prizes.*' => 'string|max:255',
             'registration_deadline' => 'nullable|date|before:event_date',
             'is_active' => 'boolean',
+            'status' => 'in:draft,published',
         ];
     }
 

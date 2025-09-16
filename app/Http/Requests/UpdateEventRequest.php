@@ -65,6 +65,7 @@ class UpdateEventRequest extends FormRequest
             'prizes.*' => 'string|max:255',
             'registration_deadline' => 'nullable|date|before:event_date',
             'is_active' => 'sometimes|boolean',
+            'status' => 'sometimes|in:draft,published,ongoing,completed,cancelled,postponed',
         ];
     }
 
