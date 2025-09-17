@@ -11,7 +11,7 @@ class UploadController extends Controller
 {
     protected $supabaseUrl;
     protected $supabaseKey;
-    protected $bucketName = 'Sports Pass Backend bucket'; 
+    protected $bucketName = 'Sports Pass files'; 
 
     public function __construct()
     {
