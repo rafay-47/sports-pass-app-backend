@@ -191,6 +191,7 @@ class AuthController extends Controller
             'phone' => 'sometimes|string|max:20|unique:users,phone,' . $user->id,
             'date_of_birth' => 'sometimes|nullable|date|before:today',
             'gender' => 'sometimes|nullable|in:male,female,other',
+            'profile_image' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'profile_image_url' => 'sometimes|nullable|url|max:500',
             'user_role' => 'sometimes|in:member,owner,admin'
         ]);
@@ -201,6 +202,26 @@ class AuthController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $validator->errors()
             ], 422);
+        }
+
+        // Handle profile image upload
+        if ($request->hasFile('profile_image')) {
+            $uploadResponse = app(\App\Http\Controllers\UploadController::class)->upload(new Request([
+                'file' => $request->file('profile_image'),
+                'type' => 'user_profile',
+                'related_id' => $user->id,
+                'file_type' => 'image',
+            ]));
+
+            if ($uploadResponse->getStatusCode() !== 200) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Profile image upload failed'
+                ], 500);
+            }
+
+            $uploadData = json_decode($uploadResponse->getContent(), true);
+            $request->merge(['profile_image_url' => $uploadData['data']['url']]);
         }
 
         // Check if user is trying to change their role

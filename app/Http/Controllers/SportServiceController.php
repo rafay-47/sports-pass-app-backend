@@ -104,7 +104,35 @@ class SportServiceController extends Controller
             ], 422);
         }
 
-        $service = SportService::create($request->validated());
+        $serviceData = $request->validated();
+
+        // Handle icon file upload
+        if ($request->hasFile('icon_file')) {
+            $uploadResponse = app(\App\Http\Controllers\UploadController::class)->upload(new Request([
+                'file' => $request->file('icon_file'),
+                'type' => 'service_icon',
+                'related_id' => '', // Will update after creation
+                'file_type' => 'image',
+            ]));
+
+            if ($uploadResponse->getStatusCode() === 200) {
+                $uploadData = json_decode($uploadResponse->getContent(), true);
+                $serviceData['icon'] = $uploadData['data']['url'];
+            }
+        }
+
+        $service = SportService::create($serviceData);
+
+        // Update the upload with the actual service ID
+        if ($request->hasFile('icon_file')) {
+            app(\App\Http\Controllers\UploadController::class)->upload(new Request([
+                'file' => $request->file('icon_file'),
+                'type' => 'service_icon',
+                'related_id' => $service->id,
+                'file_type' => 'image',
+            ]));
+        }
+
         $service->load('sport:id,name,display_name');
 
         return response()->json([

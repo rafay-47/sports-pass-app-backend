@@ -83,6 +83,7 @@ class TrainerCertificationController extends Controller
             'issuing_organization' => 'nullable|string|max:200',
             'issue_date' => 'nullable|date|before_or_equal:today',
             'expiry_date' => 'nullable|date|after:issue_date',
+            'certificate_file' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
             'certificate_url' => 'nullable|url|max:500',
         ]);
 
@@ -97,6 +98,26 @@ class TrainerCertificationController extends Controller
             ], 403);
         }
 
+        // Handle certificate file upload
+        if ($request->hasFile('certificate_file')) {
+            $uploadResponse = app(\App\Http\Controllers\UploadController::class)->upload(new Request([
+                'file' => $request->file('certificate_file'),
+                'type' => 'certificate',
+                'related_id' => $request->trainer_profile_id, // Will update after creation
+                'file_type' => 'document',
+            ]));
+
+            if ($uploadResponse->getStatusCode() !== 200) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Certificate upload failed'
+                ], 500);
+            }
+
+            $uploadData = json_decode($uploadResponse->getContent(), true);
+            $request->merge(['certificate_url' => $uploadData['data']['url']]);
+        }
+
         $certification = TrainerCertification::create([
             'trainer_profile_id' => $request->trainer_profile_id,
             'certification_name' => $request->certification_name,
@@ -106,6 +127,16 @@ class TrainerCertificationController extends Controller
             'certificate_url' => $request->certificate_url,
             'is_verified' => false, // Always start as unverified
         ]);
+
+        // Update the upload with the actual certification ID
+        if ($request->hasFile('certificate_file')) {
+            app(\App\Http\Controllers\UploadController::class)->upload(new Request([
+                'file' => $request->file('certificate_file'),
+                'type' => 'certificate',
+                'related_id' => $certification->id,
+                'file_type' => 'document',
+            ]));
+        }
 
         $certification->load(['trainerProfile.user:id,name,email']);
 

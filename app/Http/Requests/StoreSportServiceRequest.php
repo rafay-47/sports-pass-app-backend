@@ -30,6 +30,8 @@ class StoreSportServiceRequest extends FormRequest
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
             'rating' => 'nullable|numeric|min:0|max:5',
             'type' => 'nullable|in:trainer,facility,equipment,class,consultation,other',
+            'icon' => 'nullable|string',
+            'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'is_popular' => 'boolean',
             'is_active' => 'boolean'
         ];

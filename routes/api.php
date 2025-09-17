@@ -25,6 +25,7 @@ use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\ClubImageController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\UploadController;
 
 /*
 |--------------------------------------------------------------------------
@@ -496,6 +497,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{servicePurchase}/complete', [ServicePurchaseController::class, 'markCompleted'])->name('service-purchases.complete');
         Route::post('/{servicePurchase}/cancel', [ServicePurchaseController::class, 'cancel'])->name('service-purchases.cancel');
     });
+    
+    // Unified file upload route (requires authentication)
+    Route::post('/uploads', [UploadController::class, 'upload'])->name('uploads.store');
     
     // Owner-only routes (highest privilege level)
     Route::prefix('owner')->middleware('role:owner')->group(function () {

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Http\Requests\StoreClubImageRequest;
 use App\Http\Requests\UpdateClubImageRequest;
+use App\Http\Controllers\UploadController;
 
 class ClubImageController extends Controller
 {
@@ -58,18 +59,26 @@ class ClubImageController extends Controller
     {
         $club = Club::find($request->club_id);
 
-        // Handle file upload
+        // Handle file upload using unified upload API
         if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('club_images', $filename, 'public');
+            $uploadResponse = app(UploadController::class)->upload(new Request([
+                'file' => $request->file('image'),
+                'type' => 'club_image',
+                'related_id' => $request->club_id, // Use club_id as related_id for now, will update after creation
+                'file_type' => 'image',
+            ]));
 
-            if (!$path) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Failed to upload image'
-                ], 500);
+            if ($uploadResponse->getStatusCode() !== 200) {
+                return $uploadResponse; // Return error if upload fails
             }
+
+            $uploadData = json_decode($uploadResponse->getContent(), true);
+            $imageUrl = $uploadData['data']['url'];
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Image file is required'
+            ], 422);
         }
 
         // If setting as primary, unset other primary images for this club
@@ -81,11 +90,19 @@ class ClubImageController extends Controller
 
         $image = ClubImage::create([
             'club_id' => $request->club_id,
-            'image_url' => $path,
+            'image_url' => $imageUrl,
             'alt_text' => $request->alt_text,
             'is_primary' => $request->boolean('is_primary'),
             'display_order' => $request->sort_order ?? 0,
         ]);
+
+        // Update the upload with the actual image ID
+        app(UploadController::class)->upload(new Request([
+            'file' => $request->file('image'),
+            'type' => 'club_image',
+            'related_id' => $image->id,
+            'file_type' => 'image',
+        ]));
 
         return response()->json([
             'status' => 'success',
@@ -245,19 +262,30 @@ class ClubImageController extends Controller
         $uploadedImages = [];
 
         foreach ($request->file('images') as $file) {
-            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('club_images', $filename, 'public');
+            // Create a temporary ClubImage record first to get the ID
+            $tempImage = ClubImage::create([
+                'club_id' => $request->club_id,
+                'image_url' => '', // Will be updated after upload
+                'alt_text' => $request->alt_text,
+                'is_primary' => false,
+                'display_order' => 0,
+            ]);
 
-            if ($path) {
-                $image = ClubImage::create([
-                    'club_id' => $request->club_id,
-                    'image_url' => $path,
-                    'alt_text' => $request->alt_text,
-                    'is_primary' => false,
-                    'display_order' => 0,
-                ]);
+            // Upload using unified API
+            $uploadResponse = app(UploadController::class)->upload(new Request([
+                'file' => $file,
+                'type' => 'club_image',
+                'related_id' => $tempImage->id,
+                'file_type' => 'image',
+            ]));
 
-                $uploadedImages[] = $image;
+            if ($uploadResponse->getStatusCode() === 200) {
+                $uploadData = json_decode($uploadResponse->getContent(), true);
+                $tempImage->update(['image_url' => $uploadData['data']['url']]);
+                $uploadedImages[] = $tempImage;
+            } else {
+                // Delete the temp record if upload failed
+                $tempImage->delete();
             }
         }
 

@@ -78,6 +78,7 @@ class SportController extends Controller
             'name' => 'required|string|max:100|unique:sports,name',
             'display_name' => 'required|string|max:100',
             'icon' => 'required|string',
+            'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'color' => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'description' => 'nullable|string',
             'number_of_services' => 'integer|min:0',
@@ -93,9 +94,36 @@ class SportController extends Controller
         }
 
         try {
-            $sport = Sport::create($request->only([
+            $sportData = $request->only([
                 'name', 'display_name', 'icon', 'color', 'description', 'number_of_services', 'is_active'
-            ]));
+            ]);
+
+            // Handle icon file upload
+            if ($request->hasFile('icon_file')) {
+                $uploadResponse = app(\App\Http\Controllers\UploadController::class)->upload(new Request([
+                    'file' => $request->file('icon_file'),
+                    'type' => 'sport_icon',
+                    'related_id' => '', // Will update after creation
+                    'file_type' => 'image',
+                ]));
+
+                if ($uploadResponse->getStatusCode() === 200) {
+                    $uploadData = json_decode($uploadResponse->getContent(), true);
+                    $sportData['icon'] = $uploadData['data']['url'];
+                }
+            }
+
+            $sport = Sport::create($sportData);
+
+            // Update the upload with the actual sport ID
+            if ($request->hasFile('icon_file')) {
+                app(\App\Http\Controllers\UploadController::class)->upload(new Request([
+                    'file' => $request->file('icon_file'),
+                    'type' => 'sport_icon',
+                    'related_id' => $sport->id,
+                    'file_type' => 'image',
+                ]));
+            }
 
             return response()->json([
                 'status' => 'success',

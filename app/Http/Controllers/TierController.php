@@ -88,6 +88,8 @@ class TierController extends Controller
             'end_date' => 'nullable|date|after:start_date',
             'features' => 'nullable|array',
             'features.*' => 'string',
+            'icon' => 'nullable|string',
+            'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'is_active' => 'boolean',
             'is_popular' => 'boolean'
         ]);
@@ -112,7 +114,39 @@ class TierController extends Controller
             ], 422);
         }
 
-        $tier = Tier::create($request->validated());
+        $tierData = $request->only([
+            'sport_id', 'tier_name', 'display_name', 'description', 'price',
+            'duration_days', 'discount_percentage', 'start_date', 'end_date',
+            'features', 'icon', 'is_active', 'is_popular'
+        ]);
+
+        // Handle icon file upload
+        if ($request->hasFile('icon_file')) {
+            $uploadResponse = app(\App\Http\Controllers\UploadController::class)->upload(new Request([
+                'file' => $request->file('icon_file'),
+                'type' => 'tier_icon',
+                'related_id' => '', // Will update after creation
+                'file_type' => 'image',
+            ]));
+
+            if ($uploadResponse->getStatusCode() === 200) {
+                $uploadData = json_decode($uploadResponse->getContent(), true);
+                $tierData['icon'] = $uploadData['data']['url'];
+            }
+        }
+
+        $tier = Tier::create($tierData);
+
+        // Update the upload with the actual tier ID
+        if ($request->hasFile('icon_file')) {
+            app(\App\Http\Controllers\UploadController::class)->upload(new Request([
+                'file' => $request->file('icon_file'),
+                'type' => 'tier_icon',
+                'related_id' => $tier->id,
+                'file_type' => 'image',
+            ]));
+        }
+
         $tier->load('sport:id,name,display_name');
 
         return response()->json([
